@@ -1,0 +1,101 @@
+[
+  {
+    "file": "characters/nika.glb",
+    "original": "character-f.glb",
+    "author": "Kenney",
+    "page": "https://kenney.nl/assets/blocky-characters",
+    "zip": "https://kenney.nl/media/pages/assets/blocky-characters/8369c0cf30-1749547469/kenney_blocky-characters_20.zip",
+    "license": "CC0-1.0",
+    "checked": "2026-09-07",
+    "bytes": 127440,
+    "sha256": "fcb67d4134412197cdf2191f7c9c6921909ba28f565d5ce1ae16ee28aad21cae"
+  },
+  {
+    "file": "vegetation/palm.glb",
+    "original": "tree_palmDetailedTall.glb",
+    "author": "Kenney",
+    "page": "https://kenney.nl/assets/nature-kit",
+    "zip": "https://kenney.nl/media/pages/assets/nature-kit/37ac38a37b-1677698939/kenney_nature-kit.zip",
+    "license": "CC0-1.0",
+    "checked": "2026-09-07",
+    "bytes": 28204,
+    "sha256": "3140c336164a75a381ca4e8769525857485248fa35e990c9ff4ebe3909ec34ae"
+  },
+  {
+    "file": "vegetation/tree.glb",
+    "original": "tree_oak.glb",
+    "author": "Kenney",
+    "page": "https://kenney.nl/assets/nature-kit",
+    "zip": "https://kenney.nl/media/pages/assets/nature-kit/37ac38a37b-1677698939/kenney_nature-kit.zip",
+    "license": "CC0-1.0",
+    "checked": "2026-09-07",
+    "bytes": 14644,
+    "sha256": "31729107bfd61183e794a3f2d9d4dd69420a25cf76cf55fe4164a635587e07c5"
+  },
+  {
+    "file": "environment/rock.glb",
+    "original": "rock_largeA.glb",
+    "author": "Kenney",
+    "page": "https://kenney.nl/assets/nature-kit",
+    "zip": "https://kenney.nl/media/pages/assets/nature-kit/37ac38a37b-1677698939/kenney_nature-kit.zip",
+    "license": "CC0-1.0",
+    "checked": "2026-09-07",
+    "bytes": 7552,
+    "sha256": "0c6ac729729acdf9d6e4245f0cc65648a90f4c1bc6b59753bd3271c69d587d21"
+  },
+  {
+    "file": "vehicles/car.glb",
+    "original": "suv.glb",
+    "author": "Kenney",
+    "page": "https://kenney.nl/assets/car-kit",
+    "zip": "https://kenney.nl/media/pages/assets/car-kit/1a312ec241-1775131960/kenney_car-kit.zip",
+    "license": "CC0-1.0",
+    "checked": "2026-09-07",
+    "bytes": 219840,
+    "sha256": "bd8b98f128ca7438006ff3927134c248b040d8c391ad7a4522eed740968fa4c6"
+  },
+  {
+    "file": "buildings/house.glb",
+    "original": "building-type-a.glb",
+    "author": "Kenney",
+    "page": "https://kenney.nl/assets/city-kit-suburban",
+    "zip": "https://kenney.nl/media/pages/assets/city-kit-suburban/2c871b7af2-1745479373/kenney_city-kit-suburban_20.zip",
+    "license": "CC0-1.0",
+    "checked": "2026-09-07",
+    "bytes": 110408,
+    "sha256": "7432efbbd3cfbc5f517a470d0475b735d5ba917fbade70eebc393b63a2add65b"
+  },
+  {
+    "file": "buildings/warehouse.glb",
+    "original": "building-a.glb",
+    "author": "Kenney",
+    "page": "https://kenney.nl/assets/city-kit-industrial",
+    "zip": "https://kenney.nl/media/pages/assets/city-kit-industrial/0ec35b139d-1788171848/kenney_city-kit-industrial_2.0.zip",
+    "license": "CC0-1.0",
+    "checked": "2026-09-07",
+    "bytes": 189336,
+    "sha256": "dae7ea2b453b6769e813c4393868b69bc165ce8ea2b3c609625a3712ab5b9094"
+  },
+  {
+    "file": "props/tank.glb",
+    "original": "detail-tank-large.glb",
+    "author": "Kenney",
+    "page": "https://kenney.nl/assets/city-kit-industrial",
+    "zip": "https://kenney.nl/media/pages/assets/city-kit-industrial/0ec35b139d-1788171848/kenney_city-kit-industrial_2.0.zip",
+    "license": "CC0-1.0",
+    "checked": "2026-09-07",
+    "bytes": 59464,
+    "sha256": "3435664509afb5bf2ebd45b608f81f7a0ad058fc030898dfcaca5eecd07c3f32"
+  },
+  {
+    "file": "props/container.glb",
+    "original": "shipping-container-a.glb",
+    "author": "Kenney",
+    "page": "https://kenney.nl/assets/city-kit-industrial",
+    "zip": "https://kenney.nl/media/pages/assets/city-kit-industrial/0ec35b139d-1788171848/kenney_city-kit-industrial_2.0.zip",
+    "license": "CC0-1.0",
+    "checked": "2026-09-07",
+    "bytes": 48648,
+    "sha256": "e7086e1bd6892709b3cbee082fdca0e5b6a73cdd158541dc5c88f69bdde97ca4"
+  }
+]
