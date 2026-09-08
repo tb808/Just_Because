@@ -18,7 +18,7 @@ export interface WorldDestructible { id: string; root: TransformNode; collider: 
 
 export class WorldManager {
   readonly chunks = new ChunkManager();
-  readonly spawn = new Vector3(-26, 8, -320);
+  readonly spawn = new Vector3(-20, 8, -300);
   readonly destructibles: WorldDestructible[] = [];
   readonly supply = new Vector3(66, 7, -282);
   readonly supplies: Array<{baseId: string; position: [number,number,number]}> = [];
@@ -61,7 +61,9 @@ export class WorldManager {
         this.box(`relay-beacon-${i}`, p.x + 2.5, ground + p.h + 6, p.z + 2, 0.55, 0.6, 0.55, '#e3a945', false);
       }
     });
-    this.spawn.set(-26, terrainHeight(-26,-320) + 7.3, -320);
+    // Start on the clear coastal road, in front of the lookout building and
+    // inside the playable +/-310 reset boundary.
+    this.spawn.set(-20, terrainHeight(-20, -300) + 1, -300);
     const stationY = terrainHeight(66, -282);
     this.box('station-canopy', 66, stationY + 6, -282, 18, 0.7, 11, '#dd7b48');
     [-7, 7].forEach(x => this.box('station-pillar', 66 + x, stationY + 3, -282, 0.5, 6, 0.5, '#d5ddd0'));
