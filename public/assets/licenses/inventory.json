@@ -22,6 +22,116 @@
     "sha256": "e79e86f6e5dc862a75e13ab9f5ac574ab1d0fd7b82a3fc4eaa8192a23e4ea6f4"
   },
   {
+    "file": "characters/resident-coast.glb",
+    "original": "character-a.glb",
+    "author": "Kenney",
+    "page": "https://kenney.nl/assets/blocky-characters",
+    "zip": "https://kenney.nl/media/pages/assets/blocky-characters/8369c0cf30-1749547469/kenney_blocky-characters_20.zip",
+    "license": "CC0-1.0",
+    "checked": "2026-09-07",
+    "bytes": 131728,
+    "sha256": "de171e95b49210f2b35741aa5df46444accc72e1cc7f468fcee4f733b1404557"
+  },
+  {
+    "file": "characters/resident-harbor.glb",
+    "original": "character-c.glb",
+    "author": "Kenney",
+    "page": "https://kenney.nl/assets/blocky-characters",
+    "zip": "https://kenney.nl/media/pages/assets/blocky-characters/8369c0cf30-1749547469/kenney_blocky-characters_20.zip",
+    "license": "CC0-1.0",
+    "checked": "2026-09-07",
+    "bytes": 124368,
+    "sha256": "551299f9cc054afd1b36c96e98d23c6a080160783421ebfcf20fa81894ab7c7f"
+  },
+  {
+    "file": "characters/resident-artisan.glb",
+    "original": "character-e.glb",
+    "author": "Kenney",
+    "page": "https://kenney.nl/assets/blocky-characters",
+    "zip": "https://kenney.nl/media/pages/assets/blocky-characters/8369c0cf30-1749547469/kenney_blocky-characters_20.zip",
+    "license": "CC0-1.0",
+    "checked": "2026-09-07",
+    "bytes": 126068,
+    "sha256": "0217a5440e03e5efe5587fd66b6a6d0fddcb20156e72b26646257ff969e03bc9"
+  },
+  {
+    "file": "characters/resident-scholar.glb",
+    "original": "character-i.glb",
+    "author": "Kenney",
+    "page": "https://kenney.nl/assets/blocky-characters",
+    "zip": "https://kenney.nl/media/pages/assets/blocky-characters/8369c0cf30-1749547469/kenney_blocky-characters_20.zip",
+    "license": "CC0-1.0",
+    "checked": "2026-09-07",
+    "bytes": 125980,
+    "sha256": "8215012c0e7e4c662a1b7a6dea007cc879830bb2d949549dfe8b4a6243b76f7e"
+  },
+  {
+    "file": "characters/resident-market.glb",
+    "original": "character-k.glb",
+    "author": "Kenney",
+    "page": "https://kenney.nl/assets/blocky-characters",
+    "zip": "https://kenney.nl/media/pages/assets/blocky-characters/8369c0cf30-1749547469/kenney_blocky-characters_20.zip",
+    "license": "CC0-1.0",
+    "checked": "2026-09-07",
+    "bytes": 128996,
+    "sha256": "ceb00cca726ecf2ef70f9fce8c64c22c7e5592974e98a223dbbca8f871364646"
+  },
+  {
+    "file": "characters/resident-ranger.glb",
+    "original": "character-m.glb",
+    "author": "Kenney",
+    "page": "https://kenney.nl/assets/blocky-characters",
+    "zip": "https://kenney.nl/media/pages/assets/blocky-characters/8369c0cf30-1749547469/kenney_blocky-characters_20.zip",
+    "license": "CC0-1.0",
+    "checked": "2026-09-07",
+    "bytes": 130900,
+    "sha256": "995782299c176d250d0b2a9dcf381d1034358d149ca7a292e77fc8caba22b734"
+  },
+  {
+    "file": "characters/resident-craftsman.glb",
+    "original": "character-p.glb",
+    "author": "Kenney",
+    "page": "https://kenney.nl/assets/blocky-characters",
+    "zip": "https://kenney.nl/media/pages/assets/blocky-characters/8369c0cf30-1749547469/kenney_blocky-characters_20.zip",
+    "license": "CC0-1.0",
+    "checked": "2026-09-07",
+    "bytes": 129540,
+    "sha256": "b7ca00b8fcdfc3b02d687215573d59d45aea4e35f8c23c270f78607cae6f1621"
+  },
+  {
+    "file": "characters/guard-officer.glb",
+    "original": "character-j.glb",
+    "author": "Kenney",
+    "page": "https://kenney.nl/assets/blocky-characters",
+    "zip": "https://kenney.nl/media/pages/assets/blocky-characters/8369c0cf30-1749547469/kenney_blocky-characters_20.zip",
+    "license": "CC0-1.0",
+    "checked": "2026-09-07",
+    "bytes": 129116,
+    "sha256": "ec2fde58a935888166770dbf2deff184bfd40df0b74b2e32074007221449821c"
+  },
+  {
+    "file": "characters/guard-agent.glb",
+    "original": "character-q.glb",
+    "author": "Kenney",
+    "page": "https://kenney.nl/assets/blocky-characters",
+    "zip": "https://kenney.nl/media/pages/assets/blocky-characters/8369c0cf30-1749547469/kenney_blocky-characters_20.zip",
+    "license": "CC0-1.0",
+    "checked": "2026-09-07",
+    "bytes": 127660,
+    "sha256": "08d0829c893459e88840772fdc1eb93ad0e8268471eb461429ed652b8c47b8ed"
+  },
+  {
+    "file": "characters/guard-scout.glb",
+    "original": "character-r.glb",
+    "author": "Kenney",
+    "page": "https://kenney.nl/assets/blocky-characters",
+    "zip": "https://kenney.nl/media/pages/assets/blocky-characters/8369c0cf30-1749547469/kenney_blocky-characters_20.zip",
+    "license": "CC0-1.0",
+    "checked": "2026-09-07",
+    "bytes": 125468,
+    "sha256": "8d10e3e5b1243e9ec9a915eba2147dff667d4ec901fe599c2175b33290c44f08"
+  },
+  {
     "file": "weapons/rifle.glb",
     "original": "blaster-e.glb",
     "author": "Kenney",

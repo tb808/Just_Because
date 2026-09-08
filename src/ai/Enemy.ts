@@ -8,7 +8,7 @@ import { Color3 } from '@babylonjs/core/Maths/math.color';
 import { Scene } from '@babylonjs/core/scene';
 import { AssetManager } from '../core/AssetManager';
 import { CharacterAnimator } from '../core/CharacterAnimator';
-import { assets } from '../data/assets';
+import { assets, guardCharacterModels } from '../data/assets';
 import { enemyConfig } from '../data/enemies';
 import type { EnemyState } from '../data/contracts';
 import { HealthComponent } from '../systems/HealthComponent';
@@ -52,7 +52,7 @@ export class Enemy {
     this.health.onDeath = () => { this.animator?.die(); this.body.metadata = null; this.weapon?.setEnabled(false); };
   }
   async load(manager: AssetManager) {
-    const model = await manager.instantiate(assets.characters.soldier, this.id); model.root.parent = this.visual;
+    const model = await manager.instantiate(guardCharacterModels[this.personality % guardCharacterModels.length], this.id); model.root.parent = this.visual;
     this.animator = new CharacterAnimator(model.entries?.animationGroups ?? [], this.scene);
     const weapon = await manager.instantiate(assets.weapons.rifle, `${this.id}-rifle`); weapon.root.parent = this.visual; weapon.root.rotation.y = Math.PI; weapon.root.position.set(0.28, 1.2, 0.84); this.weapon = weapon.root;
     const vest = MeshBuilder.CreateBox(`${this.id}-vest`, { width: 0.54, height: 0.48, depth: 0.38 }, this.scene);

@@ -5,7 +5,7 @@ import type { AbstractMesh } from '@babylonjs/core/Meshes/abstractMesh';
 import { CharacterAnimator } from '../core/CharacterAnimator';
 import type { AssetManager } from '../core/AssetManager';
 import type { WorldManager } from './WorldManager';
-import { assets } from '../data/assets';
+import { assets, residentCharacterModels } from '../data/assets';
 import { bases } from '../data/bases';
 import { miradaResidentRoute, settlements, worldRoads, type GroundPoint, type SettlementDefinition } from '../data/world';
 import { terrainHeight } from './Terrain';
@@ -76,7 +76,7 @@ export class LivingWorld {
 
   private async addResident(manager: AssetManager, route: readonly GroundPoint[], fraction: number, baseId?: string, town?: SettlementDefinition) {
     const index = this.residents.length;
-    const model = await manager.instantiate(index%3===1?assets.characters.soldier:assets.characters.player,`resident-${index}`);
+    const model = await manager.instantiate(residentCharacterModels[index % residentCharacterModels.length],`resident-${index}`);
     const animator = new CharacterAnimator(model.entries?.animationGroups??[],this.world.scene);
     const points = route.map(([x,z]) => new Vector3(x,terrainHeight(x,z)+.12,z));
     const lengths = points.map((p,i) => Vector3.Distance(p,points[(i+1)%points.length]));
