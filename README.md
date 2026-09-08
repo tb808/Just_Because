@@ -30,9 +30,11 @@ Auf der Entwicklungsmaschine war der globale npm-Wrapper defekt. Der funktionier
 * HTML-HUD, Pause, Empfindlichkeit, Renderqualität, Rücksetzen und Maus-Fallback.
 * Lokale GLB-Assets, Cache und Instanzen, 64 Terrain-Kollisionsteile, Distanzaktivierung der Dekoration.
 * VELA-7-Sturmgewehr und NOVA-Raketenwerfer: Magazine, Reserve, Nachladen, Streuung, Rückstoss, Mündungsblitze und Einschläge. Schüsse prüfen Hindernisse ab der Waffenmündung.
-* Acht animierte Wachen: Patrouille, Sichtkegel/Sichtlinie, Schussgeräusche, Verfolgung, Beschuss, Suche und Rückkehr. Trefferreaktion und Todesanimation.
-* Drei rote Treibstofftanks: Schaden, Explosion, Wrackzustand und Kettenreaktionen. Gepoolte Raketen, Feuer, Rauch, Funken und Trümmer; synthetisierte Sounds mit Lautstärkeregler.
-* Operation Brandung: 8 Wachen und 3 Tanks ausschalten, Relais Orbis sichern. Lebenspunkte, Trefferanzeige, Punkte, einfacher Alarm und automatischer Respawn.
+* 20 animierte Wachen in drei unabhängigen Basen: Patrouille, Sichtkegel/Sichtlinie, Schussgeräusche, Verfolgung, Beschuss, Suche und Rückkehr. Trefferreaktion und Todesanimation.
+* Acht rote Treibstofftanks: Schaden, Explosion, Wrackzustand und Kettenreaktionen. Gepoolte Raketen, Feuer, Rauch, Funken und Trümmer; synthetisierte Sounds mit Lautstärkeregler.
+* Relais Orbis (8 Wachen / 3 Tanks), Hafen Mirada (6 / 2) und Station Altura (6 / 3). Ziele ausschalten, danach sechs Sekunden im 12-m-Bereich um die Flagge bleiben. Jede Befreiung gibt einmalig 1.000 Punkte, eine grüne Flagge, Bewohner und Nachschub.
+* Auf 800 × 800 m erweitertes Terrain, grössere Inselküste, Hafensteg, zwei Marktplätze, weitere Häuser, Strassenverbindungen und Höhenposten. Inselkarte mit Spielerposition, Basenstatus und Entfernung; N wählt das Ziel.
+* Zwölf zivile Bewohner mit Laufwegen, Pausen, kurzen Gesprächen und Unruhe bei Schüssen. Je zwei weitere Bewohner kehren in befreite Basen zurück. Zwei zivile Autos verkehren auf der Küstenstrasse und halten vor dem Spieler.
 * Grösserer SUV als Nachschubpunkt. Einheitlicher Massstab: Spielfigur 1,75 m, SUV 2,15 m, Dorfhaus 11 m, Depot 16 m, Tanks 6 m. Kollisionsproxies werden aus den skalierten Modellgrenzen abgeleitet.
 
 ## Steuerung
@@ -52,7 +54,8 @@ Auf der Entwicklungsmaschine war der globale npm-Wrapper defekt. Der funktionier
 | Linke Maustaste / J | Schiessen; halten für Dauerfeuer |
 | 1 / 2 | Sturmgewehr / Raketenwerfer |
 | R | Nachladen |
-| E | Gesundheit und Munition am SUV auffüllen |
+| E | Nachschub am freigeschalteten SUV / mit nahem Bewohner sprechen |
+| N | Nächste Basis auf Karte und im Auftrag verfolgen |
 | M | Kampfauftrag / Höhenroute anzeigen |
 | Rücktaste | Zurück zum Aussichtspunkt, Ausrüstung auffüllen; Einsatzfortschritt behalten |
 | Esc | Pause |
@@ -83,7 +86,7 @@ npm run preview
 1. Kampf und Höhenroute spielen, Treffergefühl und Movement abstimmen; kleines Vaulting und ausgearbeitete Flugausrüstung ergänzen.
 2. Geparkten SUV durch Vehicle/CarController fahrbar machen, Ein-/Ausstieg und sichere Übergabe des Momentums.
 3. KI um Navigation und explizite Deckungspunkte erweitern; Alarm mit Abklingzeit und begrenzten Verstärkungen.
-4. Basisauftrag in das allgemeine datengetriebene Missionssystem übernehmen. Erst danach Welt vergrössern.
+4. Weitere datengetriebene Basentypen und Aufgaben ergänzen; Weltqualität und Wegführung vor zusätzlicher Fläche verbessern.
 
 Das ist **noch nicht der komplette Action-Vertical-Slice**: Der SUV ist noch nicht fahrbar. Die Gegner verwenden direkte Bewegung mit Kollision, noch kein Navmesh und keine strategische Deckungswahl. Alarm 0–3 zeigt aktive Gegnerreaktion; es gibt noch keine Verstärkungen. Nur Tanks sind zerstörbar, Gebäude bleiben stehen. Animationen kombinieren vorhandene Kenney-Clips mit Maskierung, Überblendung und prozeduralem Waffenrückstoss; noch kein Hand-IK oder physikalische Ragdolls. Das Streaming aktiviert geladene Dekoration, entlädt aber noch keine Asset-Dateien. Keine Havok-Physik und keine WebGPU-Option. Kein Savegame; Neuladen setzt den Einsatz zurück.
 

@@ -52,6 +52,7 @@ export class Enemy {
     if (torso) { torso.computeWorldMatrix(true); vest.computeWorldMatrix(true); vest.setParent(torso); }
   }
   alert(position: Vector3) { if (this.health.dead) return; this.lastSeen.copyFrom(position); this.memory = enemyConfig.searchDuration; this.state = 'ALERT'; }
+  setActive(active: boolean) { if (this.body.isEnabled() === active) return; this.body.setEnabled(active); if (!active && !this.health.dead) this.animator?.suspend(); }
   update(dt: number) {
     if (this.health.dead) return;
     this.perception -= dt; this.fireTimer -= dt; this.hitTime = Math.max(0, this.hitTime - dt); this.shotTime = Math.max(0, this.shotTime - dt); this.memory = Math.max(0, this.memory - dt);

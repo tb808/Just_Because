@@ -2,6 +2,10 @@
 
 ## Ziel und Grenzen
 
+Stand 8. September 2026: Die Welt besitzt drei unabhängige Basen und ein separates ziviles Umgebungssystem. `src/data/bases.ts` definiert IDs, Namen, Positionen, Wachen und Tanks. `BaseManager` verwaltet Zerstörungsziele und sechs Sekunden Gebietssicherung; `CombatSystem` vergibt die Belohnung und aktiviert Flaggen/Nachschub/Bewohner. Fortschritt bleibt beim Spieler-Respawn bestehen, wird beim Einsatz-Neustart oder Neuladen zurückgesetzt. `WorldExpansion` baut neue Areale und dem Terrain folgende Strassen. `LivingWorld` steuert zwölf Zivilisten, sechs Bewohner nach Befreiung und zwei Verkehrswagen. `WorldMap` zeigt den aktuellen Gebietszustand. Diese Module ersetzen die ursprüngliche fest eingebaute Orbis-Abschlussbedingung.
+
+Terrainfläche jetzt 800 × 800 m, Landellipse ungefähr 680 × 710 m. Insgesamt 20 Gegner und acht Tanks. Gegner ausserhalb von 260 m pausieren, zivile Figuren ausserhalb von 150 m werden inklusive Bewegungsanimation deaktiviert. Gebäude und Missionsziele bleiben geladen; Dekoration verwendet weiterhin Chunk-Distanzaktivierung. Zivilisten verwenden vorgegebene Fusswege und sind keine Damage-Ziele. Verkehr ist Umgebungssimulation ohne Fahrzeuginteraktion oder Fahrzeugschaden. Kein allgemeines Navmesh, kein vollständiges Streaming und kein persistentes Savegame.
+
 Eigenständiges schnelles Third-Person-Actionspiel. Nika Serrin erkundet die Insel Cala Ventra; das Vektor-Direktorat kontrolliert die Relaisstationen. Eigene Topografie, Geschichte und Missionen. Keine Inhalte anderer kommerzieller Spiele.
 
 Zuerst ein überprüfbarer Movement-Slice, danach Kampf und Befreiung. Browser/Desktop, Maus und Tastatur, Vite/TypeScript/Babylon.js, rein statisch, kein Backend. WebGL2 als kompatibler Standard; WebGPU später als optionaler Renderer nach Messung. Keine Physikengine für die erste kinematische Bewegung nötig. Havok erst mit dynamischen Fahrzeugen/Trümmern, lokal gebündeltes WASM.

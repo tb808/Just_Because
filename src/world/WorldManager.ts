@@ -10,6 +10,8 @@ import { AssetManager } from '../core/AssetManager';
 import { assets, type AssetDefinition } from '../data/assets';
 import { createTerrain, terrainHeight } from './Terrain';
 import { ChunkManager } from './ChunkManager';
+import { expandWorld } from './WorldExpansion';
+import { bases } from '../data/bases';
 import type { TransformNode } from '@babylonjs/core/Meshes/transformNode';
 export interface WorldDestructible { id: string; root: TransformNode; collider: Mesh }
 
@@ -18,8 +20,11 @@ export class WorldManager {
   readonly spawn = new Vector3(-26, 8, -92);
   readonly destructibles: WorldDestructible[] = [];
   readonly supply = new Vector3(10, 7, -69);
+  readonly supplies: Array<{baseId: string; position: [number,number,number]}> = [];
+  readonly flags = new Map<string, Mesh>();
+  setBaseLiberated(id: string, liberated: boolean) { const flag=this.flags.get(id); if(flag) flag.material=this.material(liberated?'#b8e976':'#cf6548'); }
   private materials = new Map<string, StandardMaterial>();
-  constructor(private scene: Scene, private assetsManager: AssetManager) {}
+  constructor(readonly scene: Scene, private assetsManager: AssetManager) {}
   material(color: string) {
     if (!this.materials.has(color)) {
       const m = new StandardMaterial(color, this.scene); m.diffuseColor = Color3.FromHexString(color); m.specularColor = Color3.Black();
@@ -69,8 +74,9 @@ export class WorldManager {
     this.box('compound-wall', 85, 8, 24, 1, 4, 55, '#647e78');
     this.box('compound-wall', 55, 8, 51, 60, 4, 1, '#647e78');
     await this.decorate();
+    await expandWorld(this);
   }
-  private async place(def: AssetDefinition, name: string, x: number, z: number, y = terrainHeight(x, z), collision = false) {
+  async place(def: AssetDefinition, name: string, x: number, z: number, y = terrainHeight(x, z), collision = false) {
     const instance = await this.assetsManager.instantiate(def, name); instance.root.position.set(x, y, z);
     if (collision) {
       instance.root.computeWorldMatrix(true);
@@ -92,9 +98,10 @@ export class WorldManager {
     let seed = 473;
     const random = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; };
     const jobs: Promise<unknown>[] = [];
-    for (let i = 0; i < 230; i++) {
-      const x = (random() - 0.5) * 430, z = (random() - 0.5) * 450, y = terrainHeight(x, z);
+    for (let i = 0; i < 480; i++) {
+      const x = (random() - 0.5) * 640, z = (random() - 0.5) * 650, y = terrainHeight(x, z);
       if (y < 3 || (Math.abs(x) < 15) || (x > -130 && x < 99 && z > -115 && z < 60)) continue;
+      if (bases.some(b=>Math.hypot(x-b.center[0],z-b.center[2])<70) || (x < -140 && z > -195 && z < -60) || (x>10 && x<158 && z>65 && z<270)) continue;
       const def = i % 5 === 0 ? assets.environment.rock : y < 14 ? assets.environment.palm : assets.environment.tree;
       jobs.push(this.place(def, `nature-${i}`, x, z).then(model => { model.root.rotation.y = random() * Math.PI * 2; }));
     }

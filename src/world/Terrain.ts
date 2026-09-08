@@ -7,11 +7,16 @@ import { worldConfig } from '../data/config';
 
 const smooth = (a: number, b: number, x: number) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 export function terrainHeight(x: number, z: number) {
-  const radius = Math.sqrt((x / 235) ** 2 + (z / 255) ** 2);
+  const radius = Math.sqrt((x / 340) ** 2 + (z / 355) ** 2);
   const island = 1 - smooth(0.72, 1.05, radius);
   const mountain = 72 * Math.exp(-((x + 65) ** 2 / 6800 + (z - 145) ** 2 / 3400));
   const ridge = 29 * Math.exp(-((x - 125) ** 2 / 2800 + (z - 75) ** 2 / 5500));
-  return -7 + island * (13 + (mountain + ridge) * smooth(35, 90, z));
+  let height = -7 + island * (13 + (mountain + ridge) * smooth(35, 90, z));
+  // Broad, blended plateaus keep the new compounds and their approach paths walkable.
+  for (const [cx, cz, y] of [[-220,-100,6],[90,210,24]]) {
+    const blend = 1 - smooth(53, 83, Math.hypot(x-cx,z-cz)); height += (y-height)*blend;
+  }
+  return height;
 }
 export function createTerrain(scene: Scene) {
   const material = new StandardMaterial('terrain', scene); material.diffuseColor = Color3.White(); material.specularColor = Color3.Black();

@@ -38,6 +38,7 @@ export class HUD {
     details.querySelector('summary')!.insertAdjacentHTML('afterend', '<label>Lautstärke<input id="volume" type="range" min="0" max="1" step="0.05" value="0.35"></label>');
     const credit = details.querySelector('p')!; credit.textContent = '3D-Modelle: Kenney · CC0. Eigene Welt, Ausrüstung und synthetisierte Sounds. Der SUV dient als Nachschubpunkt und ist noch nicht fahrbar.';
     this.element('reset').textContent = 'Einsatz neu starten';
+    controls.insertAdjacentHTML('beforeend','<div><kbd>TAB</kbd><span>Inselkarte öffnen</span></div><div><kbd>N</kbd><span>Nächste Basis verfolgen</span></div>');
     this.root.querySelector('.mission .eyebrow')!.innerHTML = '<span class="live-dot"></span> EINSATZ';
     this.panel = this.element('menu'); this.start = this.element('start') as HTMLButtonElement;
     this.status = this.element('loading'); this.state = this.element('state'); this.speed = this.element('speed');
@@ -78,7 +79,7 @@ export class HUD {
     this.element('reserve').textContent = ` / ${weapon.reserve}`;
     this.element('reload-status').textContent = weapon.reloading ? `NACHLADEN · ${weapon.reloadRemaining.toFixed(1)} S` : '1 / 2 WAFFENWECHSEL · R NACHLADEN';
     this.element('reload-progress').style.width = `${weapon.reloadProgress * 100}%`;
-    this.element('alarm').textContent = combat.liberated ? 'RELAIS GESICHERT' : combat.heat ? `ALARM ${'▮'.repeat(combat.heat)}${'▯'.repeat(3 - combat.heat)}` : 'KEIN ALARM';
+    this.element('alarm').textContent = combat.liberated ? 'INSEL BEFREIT' : combat.heat ? `ALARM ${'▮'.repeat(combat.heat)}${'▯'.repeat(3 - combat.heat)}` : 'KEIN ALARM';
     this.element('alarm').classList.toggle('wanted', combat.heat > 0);
     this.element('score').textContent = `${String(combat.score).padStart(4, '0')} PUNKTE`;
     this.element('reticle').classList.toggle('hit', combat.hitFlash > 0);
@@ -87,6 +88,7 @@ export class HUD {
     (this.root.querySelector('.health-line') as HTMLElement).style.transform = `scaleX(${combat.health.current / combat.health.max})`;
     this.altitude.textContent += ` · ${Math.ceil(combat.health.current)} HP`;
     if (combat.nearSupply) this.hint.textContent = 'E · Gesundheit und Munition am SUV auffüllen';
+    else if(combat.nearResident) this.hint.textContent='E · Mit Bewohner sprechen';
     else this.hint.textContent += ' · LMB schiessen · M Auftrag';
   }
 }

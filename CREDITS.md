@@ -45,4 +45,6 @@ Stilentscheidung: flächige Farben, wenig Texturdetail, klare Silhouetten; Kenne
 
 ## Software
 
+Erweiterung vom 8. September 2026: Die vorhandenen CC0-Charaktermodelle dienen zusätzlich als unbewaffnete Bewohner, mit eigenen Hüten zur Unterscheidung. Der SUV wird auch für zivilen Umgebungsverkehr verwendet. Neue Flaggen, Marktstände, Bänke, Strassen, Lampen und Hafensteg sind eigene prozedurale Geometrie. Keine zusätzlichen Downloads oder Lizenzänderungen.
+
 Babylon.js: Apache-2.0. Vite und TypeScript: jeweils Lizenz der installierten Distribution beachten (Vite MIT, TypeScript Apache-2.0). Lizenzdateien sind Bestandteil der npm-Pakete. Keine Drittanbieter-Sounds, Schriftdateien oder Texturen ausser den eingebetteten Kenney-Texturen werden ausgeliefert.

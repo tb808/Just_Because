@@ -18,21 +18,25 @@ import type { ThirdPersonCamera } from '../src/camera/ThirdPersonCamera';
 import { CharacterAnimator } from '../src/core/CharacterAnimator';
 import { CombatSystem } from '../src/combat/CombatSystem';
 import type { WorldManager } from '../src/world/WorldManager';
+import { bases, captureDuration } from '../src/data/bases';
 
 test('complete operation awards once, respawns the player, and resets all objectives', () => {
   const engine = new NullEngine(), scene = new Scene(engine), player = new Player(scene);
   const input = { take: () => false, down: () => false, aiming: false } as unknown as InputManager;
   const camera = { yaw: 0, pitch: 0, blast() {} } as unknown as ThirdPersonCamera;
-  const world = { supply: new Vector3(1000, 0, 0) } as unknown as WorldManager;
+  const world = { supply: new Vector3(1000, 0, 0), flags: new Map(), setBaseLiberated() {} } as unknown as WorldManager;
   const combat = new CombatSystem(scene, player, input, camera, world);
-  for (let i = 0; i < 3; i++) {
-    const root = new TransformNode(`tank-${i}`, scene); root.position.set(i * 9, 0, 40);
-    const collider = MeshBuilder.CreateBox(`tank-${i}-collider`, { size: 3 }, scene); collider.position.set(i * 9, 3, 40); collider.checkCollisions = true; collider.metadata = { damageId: `fuel-${i}` }; collider.computeWorldMatrix(true);
-    combat.tanks.push(new DestructibleComponent(scene, { id: `fuel-${i}`, root, collider }, combat.damage, combat.explosions));
+  for (const base of bases) for (const tank of base.tanks) {
+    const root = new TransformNode(tank.id, scene); root.position.set(tank.x,base.center[1],tank.z);
+    const collider = MeshBuilder.CreateBox(`${tank.id}-collider`, { size: 3 }, scene); collider.position.copyFrom(root.position).addInPlace(new Vector3(0,3,0)); collider.checkCollisions = true; collider.metadata = { damageId: tank.id }; collider.computeWorldMatrix(true);
+    combat.tanks.push(new DestructibleComponent(scene, { id: tank.id, root, collider }, combat.damage, combat.explosions));
   }
   for (const enemy of combat.enemies.enemies) combat.damage.hit(enemy.id, 100, 'player');
-  combat.damage.hit('fuel-0', 100, 'player'); combat.update(0.016);
-  assert.ok(combat.liberated); assert.equal(combat.score, 2550); combat.update(0.016); assert.equal(combat.score, 2550);
+  for(const tank of combat.tanks) combat.damage.hit(tank.object.id,100,'player');
+  combat.update(.016); combat.update(.016); combat.update(.016);
+  assert.equal(combat.liberated,false);
+  for(const base of bases) { player.position.copyFrom(Vector3.FromArray(base.flag)); combat.update(captureDuration); }
+  assert.ok(combat.liberated); assert.equal(combat.score, 7000); combat.update(0.016); assert.equal(combat.score, 7000);
   let respawns = 0; combat.onRespawn = () => respawns++;
   combat.update(3.1); combat.damage.hit('player', 100, 'enemy-0'); assert.ok(player.dead);
   combat.update(2.1); assert.equal(player.dead, false); assert.equal(combat.health.current, 100); assert.equal(respawns, 1);

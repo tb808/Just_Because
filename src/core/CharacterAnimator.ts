@@ -57,6 +57,7 @@ export class CharacterAnimator {
     }
   }
   die() { if (this.dead) return; this.dead = true; this.stop(); this.clips.get('die')?.start(false); }
+  suspend() { this.stop(); }
   reset() {
     this.stop(); this.clips.get('die')?.stop();
     // Stopping a clip leaves its last transforms in place. Idle does not key

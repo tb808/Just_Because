@@ -8,4 +8,4 @@ export const movement = {
   wingsuitMaxSpeed: 55, parachuteSink: 3.5,
 } as const;
 export const cameraConfig = { sensitivity: 0.0022, distance: 7, minDistance: 3, maxDistance: 14, smoothing: 12 };
-export const worldConfig = { size: 640, subdivisions: 128, chunkSize: 96, activeDistance: 230, seaLevel: 0.3 };
+export const worldConfig = { size: 800, subdivisions: 160, chunkSize: 96, activeDistance: 250, seaLevel: 0.3 };
