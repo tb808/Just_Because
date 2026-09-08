@@ -36,7 +36,8 @@ test('complete operation awards once, respawns the player, and resets all object
   combat.update(.016); combat.update(.016); combat.update(.016);
   assert.equal(combat.liberated,false);
   for(const base of bases) { player.position.copyFrom(Vector3.FromArray(base.flag)); combat.update(captureDuration); }
-  assert.ok(combat.liberated); assert.equal(combat.score, 7000); combat.update(0.016); assert.equal(combat.score, 7000);
+  const expectedReward = bases.reduce((total, base) => total + 1000 + base.guards.length * 100 + base.tanks.length * 250, 0);
+  assert.ok(combat.liberated); assert.equal(combat.score, expectedReward); combat.update(0.016); assert.equal(combat.score, expectedReward);
   let respawns = 0; combat.onRespawn = () => respawns++;
   combat.update(3.1); combat.damage.hit('player', 100, 'enemy-0'); assert.ok(player.dead);
   combat.update(2.1); assert.equal(player.dead, false); assert.equal(combat.health.current, 100); assert.equal(respawns, 1);

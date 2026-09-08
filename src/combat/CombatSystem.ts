@@ -16,6 +16,7 @@ import { ProjectileManager } from './ProjectileManager';
 import { WeaponManager } from './WeaponManager';
 import { BaseManager } from '../world/BaseManager';
 import { LivingWorld } from '../world/LivingWorld';
+import type { CombatSaveState } from '../core/SaveGame';
 
 /** Wires combat modules; damage, ballistics, AI and visual effects keep separate ownership. */
 export class CombatSystem {
@@ -90,6 +91,26 @@ export class CombatSystem {
     this.living.update(dt,this.player.position);
   }
   revive() { this.health.reset(); this.player.revive(); this.weapons.reset(); this.immunity = 3; this.sinceDamage = 0; this.hurtFlash = 0; }
+  saveState(): CombatSaveState {
+    return {
+      score: this.score, health: this.health.current, weapons: this.weapons.saveState(), selectedBase: this.bases.selected,
+      liberatedBaseIds: this.bases.states.filter(base => base.liberated).map(base => base.definition.id),
+      defeatedEnemyIds: this.enemies.enemies.filter(enemy => enemy.health.dead).map(enemy => enemy.id),
+      destroyedTankIds: this.tanks.filter(tank => tank.health.dead).map(tank => tank.object.id),
+    };
+  }
+  restore(state: CombatSaveState) {
+    this.reset(); this.score = Math.max(0, Math.floor(state.score));
+    this.health.current = state.health > 0 ? Math.min(this.health.max, state.health) : this.health.max;
+    this.weapons.restore(state.weapons);
+    const defeated = new Set(state.defeatedEnemyIds), destroyed = new Set(state.destroyedTankIds);
+    this.enemies.enemies.forEach(enemy => { if (defeated.has(enemy.id)) enemy.restoreDefeated(); });
+    this.tanks.forEach(tank => { if (destroyed.has(tank.object.id)) tank.restoreDestroyed(); });
+    this.bases.restore(state.selectedBase, state.liberatedBaseIds);
+    for (const base of this.bases.states) if (base.liberated) {
+      this.world.setBaseLiberated(base.definition.id, true); this.living.liberate(base.definition.id);
+    }
+  }
   reset() {
     this.revive(); this.enemies.reset(); this.tanks.forEach(t => t.reset()); this.explosions.reset(); this.projectiles.reset(); this.effects.reset();
     this.score = 0; this.bases.reset(); this.living.reset();

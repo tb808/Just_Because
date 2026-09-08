@@ -1,5 +1,11 @@
 # Cala Ventra — Asset-Credits
 
+## Eigene Erweiterung vom 8. September 2026
+
+Die neue Insel ergänzt direkt erzeugte Geometrie für 227 Wohn- und Geschäftshäuser mit Fassaden, Fensterläden, Balkonen und Dächern, Stadtmobiliar, Marktstände, Cafés, Brunnen, Bäume, Sträucher, Felder, Häfen, Ruinen und Landmarken. Eigene Himmelsfarben, Wolken, Vögel, Wasseranimation, Missionsmarker und zivile Kleidungsstücke sind im Quellcode enthalten. Für diese Erweiterung wurden keine zusätzlichen Drittanbieter-Assets heruntergeladen.
+
+Die folgende Importliste dokumentiert den vorhandenen GLB-Bestand. Die neue Stadt- und Landschaftsgeometrie ersetzt die früheren GLB-Häuser und verstreuten Naturmodelle in der Weltgenerierung; deren Originaldateien bleiben als lokale Assets verfügbar. Charaktere, Depotgebäude, Fahrzeuge, Waffen, Container und Tanks werden weiterhin genutzt.
+
 Lizenz- und Quellenprüfung: **7. September 2026**. Alle eingebundenen Drittanbieter-Modelle stammen aus offiziellen Kenney-Downloads. Die jeweilige Asset-Seite wurde vor dem Download auf CC0 geprüft; die Lizenzdateien der Archive liegen zusätzlich unter `public/assets/licenses/`.
 
 ## Tatsächlich eingebunden

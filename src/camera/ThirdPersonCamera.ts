@@ -20,7 +20,7 @@ export class ThirdPersonCamera {
   blast(strength: number) { this.shake = Math.min(0.65, this.shake + strength); }
   constructor(private scene: Scene, private player: Player, private input: InputManager) {
     this.camera = new FreeCamera('third-person', new Vector3(0, 15, -100), scene);
-    this.camera.minZ = 0.1; this.camera.maxZ = 1100; this.camera.fov = 0.9; scene.activeCamera = this.camera;
+    this.camera.minZ = 0.1; this.camera.maxZ = 5200; this.camera.fov = 0.9; scene.activeCamera = this.camera;
   }
   get forward() { return new Vector3(Math.sin(this.yaw) * Math.cos(this.pitch), Math.sin(this.pitch), Math.cos(this.yaw) * Math.cos(this.pitch)); }
   get heading() { return new Vector3(Math.sin(this.yaw), 0, Math.cos(this.yaw)); }

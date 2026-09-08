@@ -2,7 +2,7 @@ export const bindings = {
   forward: 'KeyW', back: 'KeyS', left: 'KeyA', right: 'KeyD',
   sprint: 'ShiftLeft', jump: 'Space', grapple: 'KeyF', parachute: 'KeyQ',
   wingsuit: 'KeyC', interact: 'KeyE', reset: 'Backspace', reload: 'KeyR', rifle: 'Digit1', launcher: 'Digit2', mission: 'KeyM', fire: 'KeyJ',
-  lookLeft: 'ArrowLeft', lookRight: 'ArrowRight', lookUp: 'ArrowUp', lookDown: 'ArrowDown', nextBase: 'KeyN', map: 'Tab',
+  lookLeft: 'ArrowLeft', lookRight: 'ArrowRight', lookUp: 'ArrowUp', lookDown: 'ArrowDown', nextBase: 'KeyN', map: 'Tab', travel: 'KeyT', nextMission: 'KeyB',
 } as const;
 type Action = keyof typeof bindings;
 
@@ -41,6 +41,7 @@ export class InputManager {
   }
   async lock() { this.dragMode = false; try { await this.canvas.requestPointerLock(); } catch { this.dragMode = true; } }
   down(action: Action) { return this.held.has(bindings[action]) || (action === 'sprint' && this.held.has('ShiftRight')); }
+  justPressed(action: Action) { return this.pressed.has(bindings[action]); }
   take(action: Action) { const key = bindings[action]; const value = this.pressed.has(key); this.pressed.delete(key); return value; }
   axes() { return { x: Number(this.down('right')) - Number(this.down('left')), z: Number(this.down('forward')) - Number(this.down('back')) }; }
   clear() { this.held.clear(); this.pressed.clear(); this.lookX = this.lookY = this.zoom = 0; this.aiming = this.firing = false; }

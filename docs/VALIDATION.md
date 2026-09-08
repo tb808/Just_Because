@@ -1,5 +1,26 @@
 # Prüfstand
 
+## 8. September 2026 – grosse Inselüberarbeitung, ausschliesslich Codeprüfung
+
+**65 automatisierte Tests bestanden, 0 Fehler.** Die TypeScript-Prüfung und der Vite-Produktionsbuild bestehen. Der vollständige aktuelle Build liegt in `dist/`. Vite meldet weiterhin die Grössenwarnung für das Babylon-Bundle (rund 2,99 MB unkomprimiert, 674 kB gzip); dies ist kein Buildfehler. Der Sandbox-Zugriff auf übergeordnete Verzeichnisse verhinderte zunächst das Lesen der Vite-Konfiguration durch esbuild. Der anschliessend freigegebene lokale Build lief erfolgreich durch.
+
+Geprüfter Umfang:
+
+- 4.096-Meter-Terrain, acht Siedlungen mit 227 Gebäuden, sechs Basen, 50 Wachen und 17 Tanks; eindeutige IDs und Geländeanschlüsse.
+- Sämtliche Strassen auf trockenem Gelände; numerische Steigungsprüfung verhindert abrupte Plateauanschlüsse. Fassaden-, Gebäude- und Landschaftsgeometrie enthält endliche Werte und nach aussen gerichtete Normalen.
+- Fusswege und Marktrunden gegen die tatsächlichen einzelnen Kollisionsformen der gebauten Welt geprüft. Geometriebatches blockieren nicht pauschal die Zwischenräume. Entfernte Bezirke werden deaktiviert; zerstörte Tanks bleiben auch nach Rückkehr deaktiviert.
+- Alle 39 Missionen mit 128 Zielen: vollständiger Ablauf der Zustandslogik ohne Abhängigkeitsblockaden, Einmalbelohnungen, Voraussetzungen, bewusste Interaktion, Bewegungsanforderungen, unterbrechbare Aufklärung, fortlaufende Zeitlimits beim Auftragswechsel und Wiederbeginn nach Ablauf.
+- Physische Missionsankünfte gegen Kollisionsmetadaten geprüft, einschliesslich Hafen-Deckhöhe, Abstand zu Flaggenmasten und freier Zugang zum Finale. Das ersetzt keinen manuellen Durchlauf der Flugroute.
+- Zivile Besetzung aller Siedlungen, berufsbezogene Besorgungen, Gespräche, Flucht vom Geräusch, Erholung, Basisrückkehrer, Hindernisvermeidung und Distanzaktivierung.
+- Durchgehende getrennte Fahrspuren, Bremsen vor Fussgängern, Wiederanfahren, Folgeabstand und Unterscheidung zwischen Hindernissen vorne und Verkehr hinten bzw. auf der Gegenspur.
+- Wachenbewegung um Hindernisse, unterschiedliche Suchpunkte, Abklingen entfernter Alarme sowie bestehende Kampf-, Respawn-, Bewegung-, Waffen-, Explosions- und Asset-Integritätsprüfungen.
+- Alte und neue Spielstände, Teilfortschritt ohne doppelte Belohnungen, Entdeckung und Schnellreiseregeln, ungültige Speicherpositionen sowie gesperrter Zugriff auf localStorage. Während der Initialisierung wird kein bestehender Spielstand überschrieben.
+- Aufbau der Atmosphärenkomponenten, Ortswechsel, gespeicherte Tageslichtzeit und Qualitätswechsel ohne Renderer.
+
+**Auf ausdrücklichen Wunsch wurden keine visuellen Tests ausgeführt:** kein Browser geöffnet, keine Screenshots erstellt, kein Bild gerendert oder visuell verglichen. Babylon NullEngine wird ausschliesslich für Objekt-, Geometrie- und Spiellogiktests verwendet; die Tests rufen `scene.render()` nicht auf. WebGL-Shaderdarstellung, Bediengefühl, tatsächliche Framerate und visuelle Abnahme dieser Fassung bleiben beim Nutzer.
+
+Die nachfolgenden Browser- und FPS-Angaben sind historische Ergebnisse früherer Fassungen und gelten nicht als Prüfung der grossen Inselüberarbeitung.
+
 ## 8. September 2026 – mehrere Basen und belebte Insel
 
 29 automatisierte Tests bestanden. Zusätzliche Prüfungen: getrennte Basisziele, Einnahme erst nach vollständigen Zerstörungszielen, sechs Sekunden Anwesenheit, Abbruch bei Tod/Verlassen, einmalige Belohnung pro Basis, vollständiger Neustart aller drei Basen, eindeutige Entity-IDs und Spawnpositionen auf Land. Bewohner-Test prüft Bewegung, Reaktion auf Geräusche, Abschaltung in grosser Entfernung und Erscheinen erst nach Befreiung. Bestehende Respawn-Pose-Regressionen bleiben erfolgreich.

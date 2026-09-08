@@ -13,6 +13,7 @@ import { DamageSystem } from './DamageSystem';
 import { ProjectileManager } from './ProjectileManager';
 import { CombatEffects } from './CombatEffects';
 import { CombatAudio } from './CombatAudio';
+import type { WeaponSaveState } from '../core/SaveGame';
 
 export class WeaponManager {
   readonly inventory = { rifle: new Weapon(weapons.rifle), launcher: new Weapon(weapons.launcher) };
@@ -79,6 +80,18 @@ export class WeaponManager {
     }
     this.effects.muzzle(muzzle, direction); this.audio.play(this.selected === 'launcher' ? 'rocket' : 'shot');
     this.camera.kick(definition.recoil * (this.input.aiming ? 0.6 : 1)); this.onShot(muzzle);
+  }
+  saveState(): WeaponSaveState {
+    return { selected: this.selected, rifle: { ammo: this.inventory.rifle.ammo, reserve: this.inventory.rifle.reserve }, launcher: { ammo: this.inventory.launcher.ammo, reserve: this.inventory.launcher.reserve } };
+  }
+  restore(state: WeaponSaveState) {
+    this.reset();
+    for (const id of ['rifle', 'launcher'] as const) {
+      const weapon = this.inventory[id], saved = state[id];
+      weapon.ammo = Math.max(0, Math.min(weapon.definition.magazineSize, Math.floor(saved.ammo)));
+      weapon.reserve = Math.max(0, Math.min(weapon.definition.reserve, Math.floor(saved.reserve)));
+    }
+    this.select(state.selected);
   }
   reset() { Object.values(this.inventory).forEach(w => w.reset()); this.shotTime = this.recoil = 0; }
 }

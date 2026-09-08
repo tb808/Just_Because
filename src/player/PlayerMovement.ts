@@ -3,7 +3,7 @@ import { Scene } from '@babylonjs/core/scene';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 import { InputManager } from '../core/InputManager';
 import { ThirdPersonCamera } from '../camera/ThirdPersonCamera';
-import { movement } from '../data/config';
+import { movement, worldConfig } from '../data/config';
 import { Player } from './Player';
 import { GrapplingHook } from '../abilities/GrapplingHook';
 import { Wingsuit } from '../abilities/Wingsuit';
@@ -27,7 +27,8 @@ export class PlayerMovement {
   reset() { this.setState('FALLING'); this.player.position.copyFrom(this.spawn); this.player.velocity.setAll(0); this.coyote = 0; this.input.clear(); this.camera.update(0, true); this.onReset(); }
   update(dt: number) {
     const p = this.player, v = p.velocity;
-    if (this.input.take('reset') || p.position.y < -4 || Math.abs(p.position.x) > 310 || Math.abs(p.position.z) > 310) { this.reset(); return; }
+    const boundary = worldConfig.size / 2 - 12;
+    if (this.input.take('reset') || p.position.y < -4 || Math.abs(p.position.x) > boundary || Math.abs(p.position.z) > boundary) { this.reset(); return; }
     const ground = this.scene.pickWithRay(new Ray(p.position, Vector3.Down(), 1.05), m => m.checkCollisions && m !== p.body);
     const grounded = !!ground?.hit && v.y <= 0.1;
     this.coyote = grounded ? movement.coyoteTime : Math.max(0, this.coyote - dt);

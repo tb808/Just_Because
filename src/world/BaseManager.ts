@@ -26,5 +26,13 @@ export class BaseManager {
       } else base.capture = 0;
     }
   }
+  restore(selected: number, liberatedIds: readonly string[]) {
+    this.reset(); this.selected = Math.max(0, Math.min(this.states.length - 1, Math.floor(selected)));
+    const liberated = new Set(liberatedIds);
+    for (const state of this.states) if (liberated.has(state.definition.id)) {
+      state.guards = state.definition.guards.length; state.tanks = state.definition.tanks.length;
+      state.capture = captureDuration; state.liberated = true;
+    }
+  }
   reset() { this.selected = 0; for (const state of this.states) { state.guards = state.tanks = state.capture = 0; state.liberated = false; } }
 }

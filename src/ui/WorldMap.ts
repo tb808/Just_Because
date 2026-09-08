@@ -1,61 +1,133 @@
 import type { BaseManager } from '../world/BaseManager';
 import type { Player } from '../player/Player';
+import type { MissionManager } from '../missions/MissionManager';
+import type { Exploration } from '../world/Exploration';
 import { bases } from '../data/bases';
-import { landmarks, worldRoads } from '../data/world';
+import { settlements, worldLocations, worldRoads } from '../data/world';
+import { worldConfig } from '../data/config';
+import { terrainHeight } from '../world/Terrain';
 
-const roadPath = Object.values(worldRoads)
-  .map(points => points.map(([x,z], index) => `${index ? 'L' : 'M'} ${x} ${-z}`).join(' '))
-  .join(' ');
+type AtlasView = 'world' | 'journal' | 'travel';
+const escape = (value: string) => value.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
+const roads = Object.values(worldRoads).map(points => points.map(([x,z], i) => `${i?'L':'M'}${x},${-z}`).join(' ')).join(' ');
+
+/** Terrain-derived contours prevent a decorative atlas from misrepresenting the coast. */
+function terrainPath(minimum: number) {
+  const n = 64, step = worldConfig.size / n, half = worldConfig.size / 2;
+  let path = '';
+  for (let z = 0; z < n; z++) {
+    let start = -1;
+    for (let x = 0; x <= n; x++) {
+      const land = x < n && terrainHeight(-half+(x+.5)*step, -half+(z+.5)*step) > minimum;
+      if (land && start < 0) start = x;
+      if (!land && start >= 0) {
+        path += `M${-half+start*step},${half-z*step}h${(x-start)*step}v${-step}h${-(x-start)*step}Z `; start = -1;
+      }
+    }
+  }
+  return path;
+}
 
 export class WorldMap {
   private root: HTMLElement;
+  private view: AtlasView = 'world';
+  private selection = 0;
+  private rows: Array<{ id: string; title: string; description: string; label: string; status: string }> = [];
+  private listSignature = '';
+  private focus = false;
   open = false;
+  onTrackMission: (id: string) => void = () => {};
+  onTrackBase: (id: string) => void = () => {};
+  onTravel: (id: string) => void = () => {};
+  onClose: () => void = () => {};
   constructor() {
-    this.root = document.createElement('aside');
-    this.root.className = 'world-map';
-    this.root.setAttribute('aria-label', 'Karte von Cala Ventra');
+    this.root = document.createElement('aside'); this.root.className = 'world-map';
+    this.root.setAttribute('aria-label', 'Inselatlas und Auftragsjournal');
+    const half = worldConfig.size / 2;
     this.root.innerHTML = `
-      <header class="map-header"><div><span class="eyebrow">CALA VENTRA</span><h2>Inselkarte</h2></div><div><strong id="territory-count">0 / 3 FREI</strong><small>TAB · KARTE SCHLIESSEN</small></div></header>
-      <div class="map-layout">
-        <svg viewBox="-640 -640 1280 1280" role="img" aria-label="Inselkarte mit Basen, Orten und Spielerposition">
-          <defs><filter id="map-shadow"><feDropShadow dx="0" dy="5" stdDeviation="6" flood-opacity=".3"/></filter></defs>
-          <ellipse cx="0" cy="0" rx="540" ry="560" fill="#789a7c" stroke="#dfd19f" stroke-width="24" filter="url(#map-shadow)"/>
-          <path d="M -310 -220 L -150 -330 L 15 -240 L 185 -300 L 330 -220" class="map-ridge"/>
-          <path d="${roadPath}" class="map-road"/>
-          <path d="M -271 286 L -199 286" class="map-bridge"/>
-          ${landmarks.map(point => `<g class="map-poi" transform="translate(${point.position[0]},${-point.position[1]})"><circle r="13"/><text class="poi-symbol" text-anchor="middle" y="7">${point.symbol}</text><text class="poi-label" text-anchor="${point.labelSide === 'left' ? 'end' : 'start'}" x="${point.labelSide === 'left' ? -19 : 19}" y="6">${point.name}</text></g>`).join('')}
-          ${bases.map((base, i) => `<g class="map-base" id="map-${base.id}" transform="translate(${base.flag[0]},${-base.flag[2]})"><circle r="22"/><text class="base-number" text-anchor="middle" y="8">${i + 1}</text><text class="base-label" text-anchor="middle" y="-32">${base.name}</text></g>`).join('')}
-          <path id="map-player" d="M 0 -18 L 13 14 L 0 8 L -13 14 Z" fill="#fff" stroke="#244d50" stroke-width="4"/>
-          <text class="map-north" x="-560" y="-520">N ↑</text>
-          <g class="map-scale"><path d="M 390 515 V 531 M 390 523 H 490 M 490 515 V 531"/><text x="440" y="505" text-anchor="middle">100 M</text></g>
-        </svg>
-        <section class="map-panel">
-          <span class="eyebrow">VERFOLGTES ZIEL</span><h3 id="map-destination"></h3><p id="map-objective"></p>
-          <div class="map-progress"><span id="map-progress"></span></div><small id="map-base-count"></small>
-          <div class="map-legend"><span><i class="hostile"></i>Feindliche Basis</span><span><i class="friendly"></i>Befreite Basis</span><span><b>◇</b> Markt</span><span><b>⌂</b> Siedlung</span><span><b>+</b> Nachschub</span><span><b>△</b> Aussicht</span></div>
-          <div class="map-controls"><kbd>N</kbd><span>Nächste Basis verfolgen</span><kbd>TAB</kbd><span>Karte schliessen</span></div>
-        </section>
-      </div>
-      <footer><span id="map-mini-destination"></span><small>TAB · KARTE &nbsp; N · NÄCHSTE BASIS</small></footer>`;
+      <header class="map-header"><div><span class="eyebrow">DEIN WEG DURCH CALA VENTRA</span><h2>Der Inselatlas</h2></div><div><strong id="territory-count">0 / ${bases.length} FREI</strong><small id="atlas-discoveries"></small><button class="atlas-close" aria-label="Atlas schliessen">Schliessen · TAB</button></div></header>
+      <div class="map-layout"><div class="map-canvas">
+        <svg viewBox="${-half} ${-half} ${worldConfig.size} ${worldConfig.size}" role="img" aria-label="Topografische Inselkarte mit Orten, Strassen und aktuellem Ziel">
+          <defs><pattern id="sea-grid" width="256" height="256" patternUnits="userSpaceOnUse"><path d="M 256 0 H 0 V 256" fill="none" stroke="#b6d7d3" stroke-opacity=".08" stroke-width="3"/></pattern></defs>
+          <rect x="${-half}" y="${-half}" width="${worldConfig.size}" height="${worldConfig.size}" fill="url(#sea-grid)"/>
+          <path d="${terrainPath(.5)}" fill="#829d78" stroke="#d9cba0" stroke-width="18" stroke-linejoin="round"/>
+          <path d="${terrainPath(35)}" fill="#6c876e"/><path d="${terrainPath(75)}" fill="#566f66"/><path d="${terrainPath(120)}" fill="#93a59a"/>
+          <path d="${roads}" class="map-road"/>
+          ${worldLocations.map(point => `<g class="map-poi" transform="translate(${point.position[0]},${-point.position[1]})"><circle r="14"/><title>${escape(point.name)}</title></g>`).join('')}
+          ${settlements.map(place => `<g class="map-town" id="town-${place.id}" transform="translate(${place.center[0]},${-place.center[1]})"><rect x="-20" y="-20" width="40" height="40" rx="6"/><text x="31" y="-28">${escape(place.name)}</text></g>`).join('')}
+          ${bases.map((base,i) => `<g class="map-base" id="map-${base.id}" transform="translate(${base.flag[0]},${-base.flag[2]})"><circle r="27"/><text class="base-number" text-anchor="middle" y="11">${i+1}</text><title>${escape(base.name)}</title></g>`).join('')}
+          <g id="map-objective-marker"><circle r="48"/><path d="M 0 -25 L 20 0 L 0 25 L -20 0 Z"/></g>
+          <path id="map-player" d="M 0 -28 L 20 22 L 0 12 L -20 22 Z" fill="#fff" stroke="#244d50" stroke-width="5"/>
+          <text class="map-north" x="-1820" y="-1740">N ↑</text><g class="map-scale"><path d="M 1190 1780 V 1810 M 1190 1795 H 1690 M 1690 1780 V 1810"/><text x="1440" y="1750" text-anchor="middle">500 M</text></g>
+        </svg><div class="atlas-caption">8 SIEDLUNGEN <i>·</i> 16 AUSFLUGSZIELE <i>·</i> STRASSEN & HÖHENZÜGE</div>
+      </div><section class="map-panel"><nav class="atlas-tabs" aria-label="Atlasbereich"><button data-view="world">Insel</button><button data-view="journal">Aufträge</button><button data-view="travel">Reisen</button></nav><p class="atlas-help" id="atlas-help"></p><div class="atlas-list" id="atlas-list" role="list"></div><div class="atlas-detail"><span class="eyebrow" id="atlas-status"></span><h3 id="map-destination"></h3><p id="map-objective"></p><button id="atlas-confirm" class="atlas-confirm">E · ZIEL VERFOLGEN</button></div><div class="map-controls"><kbd>↑ ↓</kbd><span>Eintrag wählen</span><kbd>← →</kbd><span>Bereich wechseln</span><kbd>E</kbd><span>Auswahl bestätigen</span></div></section></div>
+      <footer><span id="map-mini-destination"></span><small>TAB · ATLAS &nbsp; M · AUFTRÄGE &nbsp; T · REISEN</small></footer>`;
     document.getElementById('app')!.append(this.root);
+    this.root.querySelectorAll<HTMLButtonElement>('[data-view]').forEach(button => button.onclick = () => this.setView(button.dataset.view as AtlasView));
+    (this.root.querySelector('.atlas-close') as HTMLButtonElement).onclick = () => this.onClose();
+    (this.root.querySelector('#atlas-confirm') as HTMLButtonElement).onclick = () => this.confirm();
+    this.root.querySelector('#atlas-list')!.addEventListener('click', e => {
+      const row = (e.target as Element).closest<HTMLButtonElement>('[data-index]');
+      if (row) { this.selection = Number(row.dataset.index); this.listSignature = ''; }
+    });
   }
-  toggle() { this.open = !this.open; this.root.classList.toggle('open', this.open); return this.open; }
+  private setView(view: AtlasView) { this.view = view; this.selection = 0; this.rows = []; this.listSignature = ''; this.focus = true; }
+  toggle(view: AtlasView = 'world') {
+    if (this.open && view === this.view) this.close();
+    else { this.open = true; this.root.classList.add('open'); this.setView(view); }
+    return this.open;
+  }
   close() { this.open = false; this.root.classList.remove('open'); }
-  update(manager: BaseManager, player: Player) {
-    const state = manager.tracked, selected = state.definition;
-    const distance = Math.round(Math.hypot(player.position.x - selected.flag[0], player.position.z - selected.flag[2]));
-    this.root.querySelector('#territory-count')!.textContent = `${manager.liberatedCount} / ${manager.states.length} FREI`;
-    this.root.querySelector('#map-destination')!.textContent = `${selected.name} · ${distance} m`;
-    this.root.querySelector('#map-mini-destination')!.textContent = `${selected.name} · ${distance} m`;
-    this.root.querySelector('#map-objective')!.textContent = state.liberated ? 'Befreit · Bewohner und Nachschub verfügbar' : selected.description;
-    this.root.querySelector('#map-base-count')!.textContent = `${state.guards}/${selected.guards.length} Wachen · ${state.tanks}/${selected.tanks.length} Tanks`;
-    const progress = (state.guards + state.tanks + Number(state.liberated)) / (selected.guards.length + selected.tanks.length + 1);
-    (this.root.querySelector('#map-progress') as HTMLElement).style.width = `${progress * 100}%`;
-    this.root.querySelector('#map-player')!.setAttribute('transform', `translate(${player.position.x},${-player.position.z}) rotate(${player.visual.rotation.y * 180 / Math.PI})`);
-    for (const base of manager.states) {
-      const marker = this.root.querySelector(`#map-${base.definition.id}`)!;
-      marker.classList.toggle('liberated', base.liberated);
-      marker.classList.toggle('selected', base === state);
+  navigate(direction: number) { if (!this.rows.length) return; this.selection = (this.selection + direction + this.rows.length) % this.rows.length; this.focus = true; }
+  switchView(direction: number) { const views: AtlasView[] = ['world','journal','travel']; this.setView(views[(views.indexOf(this.view)+direction+3)%3]); }
+  confirm() {
+    const row = this.rows[this.selection]; if (!row) return;
+    if (this.view === 'journal') this.onTrackMission(row.id);
+    else if (this.view === 'travel') this.onTravel(row.id);
+    else this.onTrackBase(row.id);
+  }
+  update(manager: BaseManager, player: Player, missions: MissionManager, exploration: Exploration, showCombat: boolean) {
+    const state = manager.tracked, base = state.definition;
+    const target = !showCombat ? missions.mapTarget : undefined;
+    const point = target?.position ?? base.flag, title = target?.title ?? base.name;
+    const distance = Math.round(Math.hypot(player.position.x - point[0], player.position.z - point[2]));
+    this.text('territory-count', `${manager.liberatedCount} / ${manager.states.length} BASEN FREI`);
+    this.text('atlas-discoveries', `${exploration.discovered.size} / ${settlements.length} ORTE · ${missions.completedCount} AUFTRÄGE ERLEDIGT`);
+    this.text('map-mini-destination', `${title} · ${distance >= 1000 ? `${(distance/1000).toFixed(1)} km` : `${distance} m`}`);
+    this.root.querySelector('#map-player')!.setAttribute('transform', `translate(${player.position.x},${-player.position.z}) rotate(${player.visual.rotation.y*180/Math.PI})`);
+    this.root.querySelector('#map-objective-marker')!.setAttribute('transform', `translate(${point[0]},${-point[2]})`);
+    this.root.querySelector('svg')!.setAttribute('viewBox', this.open ? `${-worldConfig.size/2} ${-worldConfig.size/2} ${worldConfig.size} ${worldConfig.size}` : `${player.position.x-420} ${-player.position.z-420} 840 840`);
+    for (const place of settlements) this.root.querySelector(`#town-${place.id}`)!.classList.toggle('discovered', exploration.discovered.has(place.id));
+    for (const b of manager.states) {
+      const marker = this.root.querySelector(`#map-${b.definition.id}`)!;
+      marker.classList.toggle('liberated', b.liberated); marker.classList.toggle('selected', b === state && showCombat);
+    }
+    if (!this.open) return;
+    const labels = {locked:'GESPERRT',available:'BEREIT',active:'VERFOLGT',complete:'ERLEDIGT'};
+    if (this.view === 'journal') {
+      this.rows = missions.entries.map(entry => ({id:entry.definition.id,title:entry.definition.title,description:entry.definition.description,
+        label:`${entry.definition.category} · ${entry.step}/${entry.total} · +${entry.definition.reward}`,status:labels[entry.status]}));
+      this.text('atlas-help', 'Wähle einen Auftrag. Goldene Ringe markieren das nächste Ziel. E führt vor Ort die angezeigte Aktion aus.');
+    } else if (this.view === 'travel') {
+      this.rows = settlements.map(place => ({id:place.id,title:place.name,description:place.character,
+        label:`${Math.round(Math.hypot(player.position.x-place.center[0],player.position.z-place.center[1]))} m entfernt`,status:exploration.discovered.has(place.id)?'ENTDECKT':'UNERKUNDET'}));
+      this.text('atlas-help', 'Entdecke Orte zu Fuss oder aus der Luft. Danach reist du ausserhalb eines Alarms vom Boden direkt zu ihrem Marktplatz.');
+    } else {
+      this.rows = manager.states.map(b => ({id:b.definition.id,title:b.definition.name,description:b.definition.description,
+        label:`${b.guards}/${b.definition.guards.length} Wachen · ${b.tanks}/${b.definition.tanks.length} Tanks`,status:b.liberated?'BEFREIT':'BESETZT'}));
+      this.text('atlas-help', 'Die Strassen verbinden alle Städte und Sehenswürdigkeiten. Befreite Basen bieten Bewohner und Nachschub.');
+    }
+    this.selection = Math.min(this.selection, Math.max(0,this.rows.length-1));
+    const signature = JSON.stringify([this.view,this.selection,this.rows.map(r=>[r.id,r.status,r.label])]);
+    if (signature !== this.listSignature) {
+      this.listSignature = signature;
+      this.root.querySelectorAll<HTMLElement>('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===this.view));
+      this.root.querySelector('#atlas-list')!.innerHTML = this.rows.map((row,i)=>`<button role="listitem" data-index="${i}" aria-current="${i===this.selection}" class="atlas-row ${i===this.selection?'selected':''} ${row.status==='ERLEDIGT'||row.status==='BEFREIT'?'done':''}"><span><strong>${escape(row.title)}</strong><small>${escape(row.label)}</small></span><b>${row.status}</b></button>`).join('');
+      const row = this.rows[this.selection];
+      this.text('map-destination',row?.title??'Alle Aufträge abgeschlossen'); this.text('map-objective',row?.description??'Die Insel wartet auf deinen nächsten Sprung.'); this.text('atlas-status',row?.status??'');
+      this.text('atlas-confirm',this.view==='travel'?'E · ZUM MARKTPLATZ REISEN':'E · ZIEL VERFOLGEN');
+      if (this.focus) { this.root.querySelector('.atlas-row.selected')?.scrollIntoView({block:'nearest'}); this.focus = false; }
     }
   }
+  private text(id: string, value: string) { this.root.querySelector(`#${id}`)!.textContent = value; }
 }

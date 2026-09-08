@@ -1,96 +1,81 @@
 # Cala Ventra · Freier Fall
 
-Ein eigenständiger clientseitiger Third-Person-Actionprototyp. TypeScript, Babylon.js 8.56.2 und Vite 7.3.6. Kein Backend, Login oder externer Asset-Server zur Laufzeit.
+Ein eigenständiges Third-Person-Actionspiel mit offener Inselwelt. TypeScript, Babylon.js und Vite; lokale Modelle, kein Backend und kein externer Asset-Server zur Laufzeit.
 
 ## Starten
 
-Für Entwickler: Node.js 22.12+ oder 24 LTS, npm.
+Node.js 22.12+ oder 24 LTS und npm:
 
 ```sh
 npm ci
 npm run dev
 ```
 
-Anschliessend die von Vite ausgegebene lokale Adresse öffnen (normalerweise http://127.0.0.1:5173/). **Spielen** klicken. Spieler einer bereitgestellten Website benötigen nur einen WebGL-fähigen Desktop-Browser, keine Installation. Die HTML-Datei nicht per `file://` öffnen.
-
-Auf der Entwicklungsmaschine war der globale npm-Wrapper defekt. Der funktionierende lokale Aufruf lautet gegebenenfalls:
+Die ausgegebene lokale Adresse öffnen und **Spielen** klicken. Bei einem defekten globalen npm-Wrapper funktioniert auf dieser Maschine:
 
 ```powershell
 & 'C:/Program Files/nodejs/node.exe' 'C:/Program Files/nodejs/node_modules/npm/bin/npm-cli.js' run dev
 ```
 
-## Bereits spielbar
+## Die erweiterte Insel
 
-* Rund 1,2 × 1,2 km grosse Inselregion mit Küste, Meer, Bergland, zwei Dörfern, Hafen, Strassennetz, Brücke, Tankstelle und drei getrennten Basisgeländen.
-* Animierte Kenney-Spielfigur, Laufen/Sprinten/Springen, Kollision und weiche Third-Person-Kamera mit Zoom und Hindernisprüfung.
-* Greifhaken mit Sichtlinie, 135-m-Reichweite, Seil, Beschleunigung, automatischem Lösen am Ziel und Momentum.
-* Wingsuit mit Dive/Climb-Verhalten, Luftwiderstand, Steuerung und sichtbarer Membran.
-* Fallschirm mit schneller Verzögerung, lenkbarem Sinkflug und Wechsel zwischen Luftfähigkeiten.
-* Datengetriebene Höhenroute mit vier Checkpoints, Zeit und Abschlussmeldung. Danach freies Erkunden.
-* HTML-HUD, Pause, Empfindlichkeit, Renderqualität, Rücksetzen und Maus-Fallback.
-* Lokale GLB-Assets, Cache und Instanzen, 64 Terrain-Kollisionsteile, Distanzaktivierung der Dekoration.
-* VELA-7-Sturmgewehr und NOVA-Raketenwerfer: Magazine, Reserve, Nachladen, Streuung, Rückstoss, Mündungsblitze und Einschläge. Schüsse prüfen Hindernisse ab der Waffenmündung.
-* 20 animierte Wachen in drei unabhängigen Basen: Patrouille, Sichtkegel/Sichtlinie, Schussgeräusche, Verfolgung, Beschuss, Suche und Rückkehr. Trefferreaktion und Todesanimation.
-* Acht rote Treibstofftanks: Schaden, Explosion, Wrackzustand und Kettenreaktionen. Gepoolte Raketen, Feuer, Rauch, Funken und Trümmer; synthetisierte Sounds mit Lautstärkeregler.
-* Relais Orbis (8 Wachen / 3 Tanks), Hafen Mirada (6 / 2) und Station Altura (6 / 3). Ziele ausschalten, danach sechs Sekunden im 12-m-Bereich um die Flagge bleiben. Jede Befreiung gibt einmalig 1.000 Punkte, eine grüne Flagge, Bewohner und Nachschub.
-* 1.280 × 1.280 m Terrain mit eigener Westküste, Hafensteg, drei Marktplätzen, logisch gesetzten Siedlungen, einer Küstenstrasse und Verbindungen ins Bergland. TAB öffnet eine grosse Inselkarte mit Orten, Strassen, Spielerposition und Basenstatus; N wählt das Ziel.
-* Zwölf zivile Bewohner mit Laufwegen, Pausen, kurzen Gesprächen und Unruhe bei Schüssen. Je zwei weitere Bewohner kehren in befreite Basen zurück. Zwei zivile Autos verkehren auf der Küstenstrasse und halten vor dem Spieler.
-* Grösserer SUV als Nachschubpunkt. Einheitlicher Massstab: Spielfigur 1,75 m, SUV 2,15 m, Dorfhaus 11 m, Depot 16 m, Tanks 6 m. Kollisionsproxies werden aus den skalierten Modellgrenzen abgeleitet.
+- **4.096 × 4.096 Meter Terrain**, gut zehnmal die bisherige Terrainfläche. Zusammenhängende Küsten, Buchten, Bergland und ein Strassennetz zwischen allen Siedlungen und Sehenswürdigkeiten.
+- **Acht Siedlungen:** Ventosa, Estela, Aurora, Bellacosta, San Remo, Monteluce, Oliveto und Porto Novo. Über 220 mehrgeschossige Gebäude, Fensterläden, Balkone, Dachterrassen, Läden, Marktstände, Brunnen, Cafés, Uhrtürme, Gärten, Gehwege und Übergänge.
+- **16 weitere Orte:** Leuchtturm, zwei Hafenanlagen, Oliven- und Orangenhöfe, Weinberge, Abtei, Aquädukt, Hochblick, Terminal, Raststätte, Kaskaden, Windpark, Nordkap, Fort und Salinen. Dazu tausende prozedurale Landschaftsobjekte.
+- **39 auswählbare Aufträge mit 128 Zielen:** Höhenroute, acht Lieferaufträge, acht Nachbarschaftsaufträge, sechs Befreiungsoperationen, sechs Aufklärungen, vier Zeitläufe, vier Fundstückrouten, Inselpass und Finale. Mehrere Etappen, Voraussetzungen, Interaktionen und einmalige Punktebelohnungen.
+- **Sechs Basen, 50 Wachen und 17 Tanks.** Schalte die Ziele einer Basis aus und halte ihre Flagge sechs Sekunden. Danach kehren Bewohner zurück, Nachschub wird verfügbar und die Flagge wechselt die Farbe.
+- **Bewohner und Verkehr:** Menschen mit sechs Berufen, unterschiedlicher Kleidung, Laufwegen, Arbeits- und Marktpausen, Gesprächen und örtlichen Dialogen. Bei Schüssen laufen sie zu sicheren Punkten und beruhigen sich allmählich. 18 Autos fahren auf getrennten Fahrspuren, bremsen und reagieren auf Fussgänger und andere Fahrzeuge. Entfernte Figuren werden deaktiviert.
+- **Überarbeitete Atmosphäre:** eigene Wasseranimation, Himmelsverlauf, ziehende Wolken, Küstenvögel, wechselndes Tageslicht und nahe Schatten. Die Einstellung Performance deaktiviert Schatten.
+- **Inselatlas, Journal und Reisen:** Die Minikarte folgt dem Spieler. Entdeckte Siedlungen werden für Schnellreise freigeschaltet; Reisen funktioniert am Boden ohne Alarm und ohne laufenden Zeitauftrag.
+- **Lokaler Spielstand:** Position, Aufträge, Punkte, Gesundheit, Munition, besiegte Wachen, zerstörte Tanks, befreite Basen, entdeckte Orte und Tageslichtzeit werden automatisch gesichert. Ältere Spielstände bleiben lesbar. Rücktaste behält den Einsatzfortschritt; Einsatz neu starten setzt ihn zurück.
 
 ## Steuerung
 
 | Eingabe | Funktion |
 |---|---|
-| WASD | Bewegen / Flugrichtung trimmen |
-| Shift | Sprint |
-| Space | Sprung; während Grapple: Seil lösen |
-| F | Greifhaken an markierte Oberfläche / lösen |
-| C | Wingsuit in der Luft öffnen/schliessen |
-| Q | Fallschirm in der Luft öffnen/schliessen |
-| Maus | Kamera drehen |
-| Mausrad | Zoom |
-| Rechte Maustaste | Schulterkamera; im Maus-Fallback: ziehen zum Drehen |
-| Pfeiltasten | Zusätzliche Kamerasteuerung |
-| Linke Maustaste / J | Schiessen; halten für Dauerfeuer |
-| 1 / 2 | Sturmgewehr / Raketenwerfer |
-| R | Nachladen |
-| E | Nachschub am freigeschalteten SUV / mit nahem Bewohner sprechen |
-| N | Nächste Basis auf Karte und im Auftrag verfolgen |
-| Tab | Grosse Inselkarte öffnen / schliessen |
-| M | Kampfauftrag / Höhenroute anzeigen |
-| Rücktaste | Zurück zum Aussichtspunkt, Ausrüstung auffüllen; Einsatzfortschritt behalten |
+| WASD / Shift / Space | Bewegen / Sprinten / Springen |
+| Maus / Mausrad | Kamera / Zoom |
+| F | Greifhaken an eine Oberfläche; erneut lösen |
+| Space während Greifhaken | Seil lösen, Schwung behalten |
+| C / Q | Wingsuit / Fallschirm in der Luft |
+| Linke / rechte Maustaste | Schiessen / Zielen |
+| J | Alternative Feuertaste |
+| 1 / 2 / R | Gewehr / Raketenwerfer / Nachladen |
+| E | Markierte Auftragsaktion, Nachschub oder Gespräch |
+| Tab | Inselatlas öffnen / schliessen |
+| M | Auftragsjournal öffnen / schliessen |
+| T | Reiseziele öffnen / schliessen |
+| ↑ ↓ im Atlas | Eintrag auswählen |
+| ← → im Atlas | Insel / Aufträge / Reisen wechseln |
+| E im Atlas | Ziel verfolgen oder Reise bestätigen |
+| B / N | Nächsten verfügbaren Auftrag / nächste Basis verfolgen |
+| Rücktaste | Zurück zum Start und Ausrüstung auffüllen; Fortschritt behalten |
 | Esc | Pause |
 
-Im integrierten Browser kann Pointer Lock blockiert sein. Das Spiel aktiviert dann automatisch Rechtsziehen/Pfeiltasten. Für unbegrenzte Mausrotation einen eigenständigen Browser-Tab benutzen. Keine Touch-/Mobilsteuerung implementiert.
+Der Atlas pausiert die Simulation. Die Tastatursteuerung funktioniert auch bei aktiver Maussperre; im Maus-Fallback können die Schaltflächen angeklickt werden. Falls Pointer Lock im integrierten Browser blockiert wird, die Kamera mit rechter Maustaste ziehen oder Pfeiltasten verwenden.
 
-Tipp: Der Startblick zeigt auf die roten Tanks der Basis. Mit **2** eine Rakete auswählen, zielen und feuern. Eine gut platzierte Explosion löst eine Kettenreaktion aus. Mit **F** hoch an ein Gebäude ziehen und mit **Space** lösen. **C** öffnet den Wingsuit, **Q** bremst den Sinkflug. Im Wingsuit sind die Hände belegt; im Fallschirm kann geschossen werden. **E** am SUV neben der Strasse füllt Gesundheit und Munition auf.
-
-## Projekt und Planung
-
-* [Architektur, Klassenkommunikation, Zustände und zukünftige Systeme](docs/ARCHITECTURE.md)
-* [Assets, Quellen, Formate, Lizenzen und Stilentscheidung](CREDITS.md)
-* [Prüfergebnisse und bekannte Grenzen](docs/VALIDATION.md)
-* `src/data/assets.ts`: Modelle/Massstab; `src/data/config.ts`: Movement; `src/data/weapons.ts`: Waffenwerte; `src/data/enemies.ts`: Wachen; `src/data/contracts.ts`: zukünftige Verträge.
-
-## Testen und statisch bereitstellen
+## Prüfen und bauen
 
 ```sh
 npm test
 npm run build
-npm run preview
 ```
 
-`dist/` ist eine vollständige statische Website. Den **Inhalt von dist** auf GitHub Pages oder einen anderen statischen Host veröffentlichen. `base: './'` und das Asset-Manifest berücksichtigen Unterverzeichnisse. Kein SPA-Router und keine serverseitigen Rewrites notwendig. Es wurde noch nichts öffentlich veröffentlicht; das Projekt enthält keine Hosting-Zugangsdaten.
+Die Tests prüfen Spiellogik und Geometriedaten; Babylon NullEngine erzeugt dabei keine Bilder. Bei dieser Überarbeitung wurde auf Wunsch **kein visueller Test, kein Screenshot und kein Browser-Spieltest** ausgeführt. Darstellung, Bediengefühl und Hardwareleistung prüft der Nutzer selbst.
 
-## Nächste Entwicklungsschritte
+`dist/` enthält die statisch bereitstellbare Anwendung. Eine öffentliche Bereitstellung ist nicht Bestandteil dieser Überarbeitung.
 
-1. Kampf und Höhenroute spielen, Treffergefühl und Movement abstimmen; kleines Vaulting und ausgearbeitete Flugausrüstung ergänzen.
-2. Geparkten SUV durch Vehicle/CarController fahrbar machen, Ein-/Ausstieg und sichere Übergabe des Momentums.
-3. KI um Navigation und explizite Deckungspunkte erweitern; Alarm mit Abklingzeit und begrenzten Verstärkungen.
-4. Weitere datengetriebene Basentypen und Aufgaben ergänzen; Weltqualität und Wegführung vor zusätzlicher Fläche verbessern.
+## Technische Grenzen
 
-Das ist **noch nicht der komplette Action-Vertical-Slice**: Der SUV ist noch nicht fahrbar. Die Gegner verwenden direkte Bewegung mit Kollision, noch kein Navmesh und keine strategische Deckungswahl. Alarm 0–3 zeigt aktive Gegnerreaktion; es gibt noch keine Verstärkungen. Nur Tanks sind zerstörbar, Gebäude bleiben stehen. Animationen kombinieren vorhandene Kenney-Clips mit Maskierung, Überblendung und prozeduralem Waffenrückstoss; noch kein Hand-IK oder physikalische Ragdolls. Das Streaming aktiviert geladene Dekoration, entlädt aber noch keine Asset-Dateien. Keine Havok-Physik und keine WebGPU-Option. Kein Savegame; Neuladen setzt den Einsatz zurück.
+Die Autos sind Umgebungsverkehr und noch nicht vom Spieler fahrbar. Bewohner nutzen feste, geprüfte Fusswege und Hindernisvermeidung; Wachen verwenden Sichtprüfung, lokale Hindernisvermeidung, Truppmeldungen und Suche, kein allgemeines Navmesh oder strategisches Deckungssystem. Zerstörbar sind Tanks, keine vollständigen Gebäude. Die Welt verwendet Distanzaktivierung und zusammengefasste Geometrie; geladenes Gelände und Assets bleiben im Speicher. Kein Touch-Modus, keine Hand-IK oder Ragdolls. Grafikleistung und tatsächliche WebGL-Darstellung dieser Fassung wurden nicht gemessen.
 
-## Assets reproduzieren
+## Projekt und Assets
 
-Normales Starten benötigt keine Asset-Downloads. Die fertigen GLBs sind bereits unter `public/assets`. Zum erneuten Import: `node scripts/download-assets.mjs`, ZIPs jeweils nach `.cache/assets/<pack>/` entpacken und `node scripts/prepare-assets.mjs`. Vor Verwendung aktualisierter Packs Lizenzen/Dateinamen erneut prüfen. Die Vorbereitung bettet externe PNGs ein und schreibt das Provenienz-/Hash-Inventar. Die vollständigen Pack-Archive werden nicht ausgeliefert.
+- [Architektur](docs/ARCHITECTURE.md)
+- [Prüfstand](docs/VALIDATION.md)
+- [Assets und Lizenzen](CREDITS.md)
+- Weltdefinitionen: `src/data/world.ts`, `src/data/bases.ts`, `src/data/config.ts`.
+- Missionen: `src/data/missions.ts`, `src/missions/MissionProgress.ts`.
+- Eigene Stadt-, Landschafts- und Umgebungsgeometrie entsteht direkt im Spiel; zusätzliche Downloads sind nicht erforderlich.
+
+Die vorhandenen GLBs liegen in `public/assets`. Zum reproduzierbaren Neuimport dienen `scripts/download-assets.mjs` und `scripts/prepare-assets.mjs`; Provenienz und Lizenzen liegen in `public/assets/licenses`.

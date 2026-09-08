@@ -32,7 +32,7 @@ function fixture() {
 
 test('terrain faces point upward and form collision tiles', () => {
   const engine = new NullEngine(), scene = new Scene(engine), tiles = createTerrain(scene);
-  assert.equal(tiles.length, 64);
+  assert.equal(tiles.length, 256);
   for (const tile of tiles) {
     const normals = tile.getVerticesData(VertexBuffer.NormalKind)!;
     for (let i = 1; i < normals.length; i += 3) assert.ok(normals[i] > 0, `downward terrain normal ${normals[i]}`);
