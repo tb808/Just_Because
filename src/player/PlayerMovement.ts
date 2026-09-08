@@ -12,19 +12,26 @@ import { transition, type PlayerState } from './PlayerState';
 
 export class PlayerMovement {
   private coyote = 0;
+  private stalledFor = 0;
+  private recoveryPosition?: Vector3;
   readonly grapple: GrapplingHook;
   private wingsuit: Wingsuit;
   private parachute: Parachute;
   onReset: () => void = () => {};
+  onUnstuck: () => void = () => {};
   constructor(private player: Player, private input: InputManager, private camera: ThirdPersonCamera, private scene: Scene, private spawn: Vector3) {
     this.grapple = new GrapplingHook(scene, player, camera); this.wingsuit = new Wingsuit(scene, player); this.parachute = new Parachute(scene, player);
+    // Ground, walls and props can all be hit in one sweep. The default of three
+    // retries can stop at a seam before Babylon has resolved every contact.
+    this.player.body.collisionRetryCount = 8;
   }
   private setState(state: PlayerState) {
     if (state !== 'GRAPPLING') this.grapple.release();
     this.wingsuit.show(state === 'WINGSUIT'); this.parachute.show(state === 'PARACHUTE'); this.player.state = state;
   }
   cancelAbilities() { this.setState('FALLING'); }
-  reset() { this.setState('FALLING'); this.player.position.copyFrom(this.spawn); this.player.velocity.setAll(0); this.coyote = 0; this.input.clear(); this.camera.update(0, true); this.onReset(); }
+  markRecoveryPoint(position = this.player.position) { this.recoveryPosition = position.clone(); }
+  reset() { this.setState('FALLING'); this.player.position.copyFrom(this.spawn); this.player.velocity.setAll(0); this.coyote = this.stalledFor = 0; this.markRecoveryPoint(this.spawn); this.input.clear(); this.camera.update(0, true); this.onReset(); }
   update(dt: number) {
     const p = this.player, v = p.velocity;
     const boundary = worldConfig.size / 2 - 12;
@@ -54,13 +61,46 @@ export class PlayerMovement {
       else if (this.coyote > 0) { v.y = movement.jumpSpeed; this.coyote = 0; p.state = 'FALLING'; }
     }
     if (v.length() > movement.maxSpeed) v.normalize().scaleInPlace(movement.maxSpeed);
-    const before = p.position.clone();
+    const displacement = v.scale(dt), attemptedHorizontal = Math.hypot(displacement.x, displacement.z);
+    const attemptedDistance = displacement.length(), before = p.position.clone(), movementState = p.state;
     // Several simulation ticks share one render ID. Force the world transform so
     // Babylon's collision sweep starts at this tick's position, not the last frame.
     p.body.computeWorldMatrix(true);
-    p.body.moveWithCollisions(v.scale(dt));
+    p.body.moveWithCollisions(displacement);
+    const actualHorizontal = Math.hypot(p.position.x - before.x, p.position.z - before.z);
+    const actualDistance = Vector3.Distance(p.position, before);
     if (v.y > 0 && p.position.y - before.y < v.y * dt * 0.2) v.y = 0;
     if (Math.abs(p.position.x - before.x) < Math.abs(v.x * dt) * 0.15) v.x = 0;
     if (Math.abs(p.position.z - before.z) < Math.abs(v.z * dt) * 0.15) v.z = 0;
+    const walking = movementState === 'ON_FOOT' && wish.lengthSquared() > 0.01 && attemptedHorizontal > 0.001;
+    const grappling = movementState === 'GRAPPLING' && attemptedDistance > 0.001;
+    const attempted = grappling ? attemptedDistance : attemptedHorizontal;
+    const actual = grappling ? actualDistance : actualHorizontal;
+    this.stalledFor = (walking || grappling) && actual < Math.max(0.0002, attempted * 0.08) ? this.stalledFor + dt : 0;
+    if (grounded && walking && actualHorizontal >= attemptedHorizontal * 0.55) this.markRecoveryPoint();
+    if (this.stalledFor > 0.7) this.resolveStall(grappling);
+  }
+
+  private resolveStall(grappling: boolean) {
+    this.stalledFor = 0;
+    if (!this.hasHorizontalEscape()) {
+      this.setState('FALLING'); this.player.position.copyFrom(this.recoveryPosition ?? this.spawn);
+      this.player.velocity.setAll(0); this.coyote = 0; this.player.body.computeWorldMatrix(true); this.camera.update(0, true); this.onUnstuck();
+    } else if (grappling) {
+      // A grapple pulling continuously into an intervening surface should not
+      // leave the player captured in GRAPPLING until its long global timeout.
+      this.setState('FALLING'); this.player.velocity.y = Math.max(this.player.velocity.y, 2);
+    }
+  }
+
+  private hasHorizontalEscape() {
+    const origin = this.player.position.clone(); let freedom = 0;
+    for (const direction of [Vector3.Right(), Vector3.Left(), Vector3.Forward(), Vector3.Backward()]) {
+      this.player.position.copyFrom(origin); this.player.body.computeWorldMatrix(true);
+      this.player.body.moveWithCollisions(direction.scale(0.45));
+      freedom = Math.max(freedom, Math.hypot(this.player.position.x - origin.x, this.player.position.z - origin.z));
+    }
+    this.player.position.copyFrom(origin); this.player.body.computeWorldMatrix(true);
+    return freedom > 0.14;
   }
 }

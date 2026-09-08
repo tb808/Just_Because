@@ -67,6 +67,21 @@ test('high-speed movement cannot tunnel through a wall', () => {
   f.player.position.y = 10; f.player.velocity.z = 60; f.step(0.2);
   assert.ok(f.player.position.z < 4.6, `wall penetration ${f.player.position.z}`); f.dispose();
 });
+test('pushing against an ordinary wall is not mistaken for being trapped', () => {
+  const f = fixture(); const wall = MeshBuilder.CreateBox('wall', { width: 15, height: 5, depth: 0.2 }, f.scene);
+  wall.position.set(0, 2.5, 1); wall.checkCollisions = true; wall.computeWorldMatrix(true);
+  let recovered = 0; f.controller.onUnstuck = () => recovered++; f.held.add('forward'); f.step(1.5);
+  assert.equal(recovered, 0); assert.ok(f.player.position.z < 0.7); f.dispose();
+});
+test('a collision lock returns the player to safety and movement resumes', () => {
+  const f = fixture(); f.player.position.set(6, 0.91, 0); f.player.body.computeWorldMatrix(true);
+  const moveWithCollisions = f.player.body.moveWithCollisions.bind(f.player.body);
+  f.player.body.moveWithCollisions = () => f.player.body;
+  let recovered = 0; f.controller.onUnstuck = () => recovered++; f.held.add('forward'); f.step(1);
+  assert.equal(recovered, 1); assert.ok(Vector3.Distance(f.player.position, new Vector3(0, 0.91, 0)) < 1);
+  f.player.body.moveWithCollisions = moveWithCollisions;
+  f.step(0.5); assert.ok(f.player.position.z > 1); f.dispose();
+});
 test('camera retracts in front of an occluding wall', () => {
   const f = fixture(); const wall = MeshBuilder.CreateBox('camera-wall', { width: 12, height: 8, depth: 0.4 }, f.scene);
   wall.position.set(0, 3, -3); wall.checkCollisions = true; wall.computeWorldMatrix(true);

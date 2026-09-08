@@ -68,6 +68,10 @@ export class Game {
     this.map.onTravel = id => this.travel(id);
     this.map.onClose = () => this.closeAtlas();
     this.controller.onReset = () => { this.combat.revive(); this.hud.notify('Zurück am Aussichtspunkt · Ausrüstung aufgefüllt.'); };
+    this.controller.onUnstuck = () => {
+      this.world.chunks.update(1, this.player.position);
+      this.hud.notify('Feststecken erkannt · zur letzten sicheren Position zurückgesetzt.');
+    };
     this.assetManager.onProgress = (done, total) => this.hud.loading(done, total);
     this.input.onPause = () => { this.running = false; this.map.close(); this.scene.animationsEnabled = false; this.accumulator = 0; this.hud.pause(true); };
     this.hud.onStart = () => void this.start();
@@ -160,6 +164,7 @@ export class Game {
     const destination = this.exploration.destination(id,this.combat.heat>0||this.player.dead,this.player.state==='ON_FOOT');
     if (!destination) { this.hud.notify('Reisen ist zu entdeckten Orten möglich, wenn du am Boden bist und kein Alarm herrscht.'); return; }
     this.controller.cancelAbilities(); this.player.position.copyFrom(destination); this.player.velocity.setAll(0);
+    this.controller.markRecoveryPoint(destination);
     this.player.body.computeWorldMatrix(true); this.world.chunks.update(1,destination); this.camera.update(0,true);
     this.atmosphere?.update(0,destination); this.closeAtlas(); this.saveGame();
     this.hud.notify(`Ankunft in ${settlements.find(place=>place.id===id)?.name} · Marktplatz`);
