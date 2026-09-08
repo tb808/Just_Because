@@ -38,6 +38,8 @@ Die ausgegebene lokale Adresse öffnen und **Spielen** klicken. Bei einem defekt
 | F | Greifhaken an eine Oberfläche; erneut lösen |
 | Space während Greifhaken | Seil lösen, Schwung behalten |
 | C / Q | Wingsuit / Fallschirm in der Luft |
+| W / S im Wingsuit | Sturzflug beschleunigen / hochziehen und Tempo in Höhe umwandeln |
+| A / D im Wingsuit | Kurven fliegen; Nika legt sich sichtbar in die Kurve |
 | U | Aus Boden oder Kollision nach oben befreien |
 | Linke / rechte Maustaste | Schiessen / Zielen |
 | J | Alternative Feuertaste |

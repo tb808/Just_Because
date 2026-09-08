@@ -84,7 +84,7 @@ export class HUD {
     this.speed.textContent = Math.round(player.speed * 3.6).toString().padStart(3, '0');
     this.altitude.textContent = `${Math.max(0, Math.round(player.position.y - 0.9))} M Ü. M.`;
     this.metrics.textContent = `${Math.round(fps)} FPS · ${chunks} AKTIVE SEKTOREN`;
-    this.hint.textContent = player.state === 'ON_FOOT' ? 'SHIFT sprinten · SPACE springen · F auf eine Oberfläche · U befreien' : 'F Greifhaken · C Wingsuit · Q Fallschirm · U befreien';
+    this.hint.textContent = player.state === 'ON_FOOT' ? 'SHIFT sprinten · SPACE springen · F auf eine Oberfläche · U befreien' : player.state === 'WINGSUIT' ? 'W Sturzflug / Tempo · S hochziehen / Höhe · A D Kurven · Q Fallschirm' : 'F Greifhaken · C Wingsuit · Q Fallschirm · U befreien';
     for (const [id, state] of [['grapple', 'GRAPPLING'], ['wingsuit', 'WINGSUIT'], ['parachute', 'PARACHUTE']]) this.element(`ability-${id}`).classList.toggle('active', player.state === state);
   }
   updateCombat(combat: CombatSystem) {

@@ -16,6 +16,8 @@ export class Player {
   private animator?: CharacterAnimator;
   combatPose: 'none' | 'aim' | 'shoot' | 'reload' = 'none';
   aimYaw = 0;
+  flightPitch = 0;
+  flightRoll = 0;
   dead = false;
   constructor(private scene: Scene) {
     this.body = MeshBuilder.CreateBox('player-collider', { width: 0.76, height: 1.8, depth: 0.76 }, scene);
@@ -40,11 +42,15 @@ export class Player {
       const delta = Math.atan2(Math.sin(angle - this.visual.rotation.y), Math.cos(angle - this.visual.rotation.y));
       this.visual.rotation.y += delta * (1 - Math.exp(-12 * dt));
     }
-    const pitch = this.state === 'WINGSUIT' ? Math.PI / 2.7 : 0;
+    // The imported character is upright at zero. During flight, rotate it into a
+    // prone pose and then add the real flight-path pitch and bank visibly.
+    const pitch = this.state === 'WINGSUIT' ? Math.PI / 2.7 - this.flightPitch : 0;
     this.visual.rotation.x += (pitch - this.visual.rotation.x) * (1 - Math.exp(-8 * dt));
+    const roll = this.state === 'WINGSUIT' ? this.flightRoll : 0;
+    this.visual.rotation.z += (roll - this.visual.rotation.z) * (1 - Math.exp(-7 * dt));
   }
   revive() {
     this.dead = false; this.animator?.reset(); this.combatPose = 'none';
-    this.visual.rotation.x = 0; this.visual.rotation.z = 0;
+    this.flightPitch = this.flightRoll = 0; this.visual.rotation.x = 0; this.visual.rotation.z = 0;
   }
 }

@@ -111,10 +111,18 @@ test('air abilities switch exclusively and reset clears their meshes', () => {
   assert.equal(f.scene.getMeshByName('parachute-canopy')!.isEnabled(), true);
   f.controller.reset(); assert.equal(f.scene.getMeshByName('parachute-canopy')!.isEnabled(), false); assert.equal(f.player.speed, 0); f.dispose();
 });
-test('wingsuit dive gains speed; parachute arrests a fast fall', () => {
+test('wingsuit dive stores speed that can be traded back for height', () => {
   const dive = { x: 0, y: -5, z: 25 }, climb = { ...dive };
   for (let i = 0; i < 240; i++) { glideVelocity(dive, 0, -0.5, 1 / 120); glideVelocity(climb, 0, 0.25, 1 / 120); }
-  assert.ok(dive.z > climb.z); assert.ok(dive.y < climb.y);
+  assert.ok(Math.hypot(dive.x, dive.y, dive.z) > Math.hypot(climb.x, climb.y, climb.z)); assert.ok(dive.y < climb.y);
+  const zoom = { x: 0, y: -4, z: 22 }; let altitude = 0;
+  for (let i = 0; i < 240; i++) { glideVelocity(zoom, 0, -0.55, 1 / 120); altitude += zoom.y / 120; }
+  const pullUpAltitude = altitude;
+  for (let i = 0; i < 180; i++) { glideVelocity(zoom, 0, 0.35, 1 / 120); altitude += zoom.y / 120; }
+  assert.ok(zoom.y > 0, `pull-up vertical speed ${zoom.y}`);
+  assert.ok(altitude > pullUpAltitude, `pull-up failed to regain height: ${altitude - pullUpAltitude}`);
+});
+test('parachute arrests a fast fall', () => {
   const fall = { x: 30, y: -60, z: 0 }; for (let i = 0; i < 240; i++) parachuteVelocity(fall, 0, 5, 1 / 120);
   assert.ok(Math.abs(fall.y + 3.5) < 0.01); assert.ok(Math.abs(fall.x) < 0.3);
 });
