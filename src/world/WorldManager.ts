@@ -12,14 +12,15 @@ import { createTerrain, terrainHeight } from './Terrain';
 import { ChunkManager } from './ChunkManager';
 import { expandWorld } from './WorldExpansion';
 import { bases } from '../data/bases';
+import { settlements } from '../data/world';
 import type { TransformNode } from '@babylonjs/core/Meshes/transformNode';
 export interface WorldDestructible { id: string; root: TransformNode; collider: Mesh }
 
 export class WorldManager {
   readonly chunks = new ChunkManager();
-  readonly spawn = new Vector3(-26, 8, -92);
+  readonly spawn = new Vector3(-26, 8, -320);
   readonly destructibles: WorldDestructible[] = [];
-  readonly supply = new Vector3(10, 7, -69);
+  readonly supply = new Vector3(66, 7, -282);
   readonly supplies: Array<{baseId: string; position: [number,number,number]}> = [];
   readonly flags = new Map<string, Mesh>();
   setBaseLiberated(id: string, liberated: boolean) { const flag=this.flags.get(id); if(flag) flag.material=this.material(liberated?'#b8e976':'#cf6548'); }
@@ -40,39 +41,31 @@ export class WorldManager {
   async create() {
     const scene = this.scene;
     scene.clearColor = new Color4(0.56, 0.79, 0.86, 1);
-    scene.fogMode = Scene.FOGMODE_LINEAR; scene.fogStart = 180; scene.fogEnd = 590; scene.fogColor = new Color3(0.56, 0.79, 0.86);
+    scene.fogMode = Scene.FOGMODE_LINEAR; scene.fogStart = 330; scene.fogEnd = 940; scene.fogColor = new Color3(0.56, 0.79, 0.86);
     scene.collisionsEnabled = true;
     const ambient = new HemisphericLight('sky', Vector3.Up(), scene); ambient.intensity = 0.7; ambient.groundColor = Color3.FromHexString('#577770');
     const sun = new DirectionalLight('sun', new Vector3(-0.7, -1, 0.4), scene); sun.intensity = 0.95; sun.diffuse = Color3.FromHexString('#fff1cf');
     createTerrain(scene);
     const sea = MeshBuilder.CreateGround('Mediterranean sea', { width: 5000, height: 5000 }, scene);
     sea.position.y = 0.3; sea.material = this.material('#1d9cad'); sea.isPickable = false;
-    // Purpose-built traversal structures; collision geometry is independent from vendor models.
-    this.box('coastal-road', 0, 6.04, -30, 9, 0.2, 220, '#4a6366');
-    for (let z = -130; z < 80; z += 12) this.box('road-mark', 0, 6.16, z, 0.2, 0.015, 5, '#e8dfb9', false);
-    this.box('cross-road', 32, 6.07, -52, 125, 0.2, 8, '#4a6366');
-    const stages = [{ x: -26, z: -92, h: 7 }, { x: -22, z: -25, h: 28 }, { x: 36, z: 25, h: 49 }, { x: 80, z: -54, h: 13 }];
+    // Traversal line starts above the southern village and leads toward the interior.
+    const stages = [{ x: -26, z: -320, h: 7 }, { x: 34, z: -230, h: 28 }, { x: 112, z: -82, h: 48 }, { x: 202, z: -170, h: 15 }];
     stages.forEach((p, i) => {
-      this.box(`relay-${i}`, p.x, 6 + p.h / 2, p.z, i === 0 ? 16 : 9, p.h, 12, '#d5ddd0');
-      this.box(`relay-cap-${i}`, p.x, 6 + p.h, p.z, i === 0 ? 17 : 11, 0.45, 13, '#294d52');
-      this.box(`relay-stripe-${i}`, p.x, 5 + p.h, p.z - 6.06, 9, 1, 0.1, '#e3a945', false);
+      const ground = terrainHeight(p.x, p.z);
+      this.box(`relay-${i}`, p.x, ground + p.h / 2, p.z, i === 0 ? 16 : 9, p.h, 12, '#d5ddd0');
+      this.box(`relay-cap-${i}`, p.x, ground + p.h, p.z, i === 0 ? 17 : 11, 0.45, 13, '#294d52');
+      this.box(`relay-stripe-${i}`, p.x, ground - 1 + p.h, p.z - 6.06, 9, 1, 0.1, '#e3a945', false);
       if (i > 0) {
-        for (let floor = 9; floor < p.h; floor += 5) this.box(`relay-vents-${i}-${floor}`, p.x, floor, p.z - 6.08, 5.5, 0.85, 0.16, '#547675', false);
-        this.box(`relay-mast-${i}`, p.x + 2.5, 9 + p.h, p.z + 2, 0.25, 6, 0.25, '#31555a');
-        this.box(`relay-beacon-${i}`, p.x + 2.5, 12 + p.h, p.z + 2, 0.55, 0.6, 0.55, '#e3a945', false);
+        for (let floor = 4; floor < p.h; floor += 5) this.box(`relay-vents-${i}-${floor}`, p.x, ground + floor, p.z - 6.08, 5.5, 0.85, 0.16, '#547675', false);
+        this.box(`relay-mast-${i}`, p.x + 2.5, ground + p.h + 3, p.z + 2, 0.25, 6, 0.25, '#31555a');
+        this.box(`relay-beacon-${i}`, p.x + 2.5, ground + p.h + 6, p.z + 2, 0.55, 0.6, 0.55, '#e3a945', false);
       }
     });
-    this.spawn.set(-26, 14.3, -92);
-    // A bridge across the western inlet, gas-station canopy, and an unpopulated military compound.
-    this.box('bridge-deck', -150, 7, -100, 75, 1, 9, '#9da99a');
-    this.box('bridge-rail-l', -150, 8.1, -104.2, 75, 1.2, 0.3, '#d8ddc6');
-    this.box('bridge-rail-r', -150, 8.1, -95.8, 75, 1.2, 0.3, '#d8ddc6');
-    this.box('station-canopy', 26, 12, -95, 15, 0.7, 10, '#dd7b48');
-    [-6, 6].forEach(x => this.box('station-pillar', 26 + x, 9, -95, 0.5, 6, 0.5, '#d5ddd0'));
-    [-4, 4].forEach(x => this.box('fuel-pump', 26 + x, 7.1, -95, 1, 2.2, 1, '#dd7b48'));
-    this.box('compound', 56, 6.08, 24, 60, 0.25, 55, '#a7b49d');
-    this.box('compound-wall', 85, 8, 24, 1, 4, 55, '#647e78');
-    this.box('compound-wall', 55, 8, 51, 60, 4, 1, '#647e78');
+    this.spawn.set(-26, terrainHeight(-26,-320) + 7.3, -320);
+    const stationY = terrainHeight(66, -282);
+    this.box('station-canopy', 66, stationY + 6, -282, 18, 0.7, 11, '#dd7b48');
+    [-7, 7].forEach(x => this.box('station-pillar', 66 + x, stationY + 3, -282, 0.5, 6, 0.5, '#d5ddd0'));
+    [-4, 4].forEach(x => this.box('fuel-pump', 66 + x, stationY + 1.1, -282, 1, 2.2, 1, '#dd7b48'));
     await this.decorate();
     await expandWorld(this);
   }
@@ -89,19 +82,17 @@ export class WorldManager {
   }
   private async decorate() {
     await Promise.all([
-      ...[-62, -88, -114].flatMap((x, i) => [-48, -16, 18].map((z, j) => this.place(assets.environment.house, `house-${i}-${j}`, x, z, terrainHeight(x, z), true))),
-      this.place(assets.environment.warehouse, 'depot', 65, 29, 6.2, true),
-      ...[0, 1, 2].map(i => this.place(assets.environment.tank, `fuel-${i}`, 63 + i * 9, -12, 6.2, true)),
-      this.place(assets.environment.container, 'container', 42, 39, 6.2, true),
-      this.place(assets.vehicles.car, 'parked-car', 10, -69, 6.2, true),
+      ...settlements.flatMap(settlement => settlement.homes.map(([x,z], index) => this.place(assets.environment.house, `${settlement.id}-house-${index}`, x, z, terrainHeight(x, z), true))),
+      this.place(assets.vehicles.car, 'parked-car', 66, -266, terrainHeight(66,-266)+.2, true),
     ]);
     let seed = 473;
     const random = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; };
     const jobs: Promise<unknown>[] = [];
-    for (let i = 0; i < 480; i++) {
-      const x = (random() - 0.5) * 640, z = (random() - 0.5) * 650, y = terrainHeight(x, z);
-      if (y < 3 || (Math.abs(x) < 15) || (x > -130 && x < 99 && z > -115 && z < 60)) continue;
-      if (bases.some(b=>Math.hypot(x-b.center[0],z-b.center[2])<70) || (x < -140 && z > -195 && z < -60) || (x>10 && x<158 && z>65 && z<270)) continue;
+    for (let i = 0; i < 850; i++) {
+      const x = (random() - 0.5) * 1080, z = (random() - 0.5) * 1120, y = terrainHeight(x, z);
+      if (y < 3) continue;
+      if (bases.some(b=>Math.hypot(x-b.center[0],z-b.center[2])<95)) continue;
+      if (Math.hypot(x,z+220)<150 || Math.hypot(x+115,z-230)<100 || (x>-475&&x<-295&&z>-330&&z<-165)) continue;
       const def = i % 5 === 0 ? assets.environment.rock : y < 14 ? assets.environment.palm : assets.environment.tree;
       jobs.push(this.place(def, `nature-${i}`, x, z).then(model => { model.root.rotation.y = random() * Math.PI * 2; }));
     }

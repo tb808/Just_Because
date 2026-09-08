@@ -21,7 +21,7 @@ Auf der Entwicklungsmaschine war der globale npm-Wrapper defekt. Der funktionier
 
 ## Bereits spielbar
 
-* Kleine Inselregion mit Küste, Meer, Hügeln, Dorf, Strassen, Brücke, Tankstelle und bewachtem Basisgelände.
+* Rund 1,2 × 1,2 km grosse Inselregion mit Küste, Meer, Bergland, zwei Dörfern, Hafen, Strassennetz, Brücke, Tankstelle und drei getrennten Basisgeländen.
 * Animierte Kenney-Spielfigur, Laufen/Sprinten/Springen, Kollision und weiche Third-Person-Kamera mit Zoom und Hindernisprüfung.
 * Greifhaken mit Sichtlinie, 135-m-Reichweite, Seil, Beschleunigung, automatischem Lösen am Ziel und Momentum.
 * Wingsuit mit Dive/Climb-Verhalten, Luftwiderstand, Steuerung und sichtbarer Membran.
@@ -33,7 +33,7 @@ Auf der Entwicklungsmaschine war der globale npm-Wrapper defekt. Der funktionier
 * 20 animierte Wachen in drei unabhängigen Basen: Patrouille, Sichtkegel/Sichtlinie, Schussgeräusche, Verfolgung, Beschuss, Suche und Rückkehr. Trefferreaktion und Todesanimation.
 * Acht rote Treibstofftanks: Schaden, Explosion, Wrackzustand und Kettenreaktionen. Gepoolte Raketen, Feuer, Rauch, Funken und Trümmer; synthetisierte Sounds mit Lautstärkeregler.
 * Relais Orbis (8 Wachen / 3 Tanks), Hafen Mirada (6 / 2) und Station Altura (6 / 3). Ziele ausschalten, danach sechs Sekunden im 12-m-Bereich um die Flagge bleiben. Jede Befreiung gibt einmalig 1.000 Punkte, eine grüne Flagge, Bewohner und Nachschub.
-* Auf 800 × 800 m erweitertes Terrain, grössere Inselküste, Hafensteg, zwei Marktplätze, weitere Häuser, Strassenverbindungen und Höhenposten. Inselkarte mit Spielerposition, Basenstatus und Entfernung; N wählt das Ziel.
+* 1.280 × 1.280 m Terrain mit eigener Westküste, Hafensteg, drei Marktplätzen, logisch gesetzten Siedlungen, einer Küstenstrasse und Verbindungen ins Bergland. TAB öffnet eine grosse Inselkarte mit Orten, Strassen, Spielerposition und Basenstatus; N wählt das Ziel.
 * Zwölf zivile Bewohner mit Laufwegen, Pausen, kurzen Gesprächen und Unruhe bei Schüssen. Je zwei weitere Bewohner kehren in befreite Basen zurück. Zwei zivile Autos verkehren auf der Küstenstrasse und halten vor dem Spieler.
 * Grösserer SUV als Nachschubpunkt. Einheitlicher Massstab: Spielfigur 1,75 m, SUV 2,15 m, Dorfhaus 11 m, Depot 16 m, Tanks 6 m. Kollisionsproxies werden aus den skalierten Modellgrenzen abgeleitet.
 
@@ -56,6 +56,7 @@ Auf der Entwicklungsmaschine war der globale npm-Wrapper defekt. Der funktionier
 | R | Nachladen |
 | E | Nachschub am freigeschalteten SUV / mit nahem Bewohner sprechen |
 | N | Nächste Basis auf Karte und im Auftrag verfolgen |
+| Tab | Grosse Inselkarte öffnen / schliessen |
 | M | Kampfauftrag / Höhenroute anzeigen |
 | Rücktaste | Zurück zum Aussichtspunkt, Ausrüstung auffüllen; Einsatzfortschritt behalten |
 | Esc | Pause |

@@ -1,17 +1,11 @@
 import type { BaseManager } from '../world/BaseManager';
 import type { Player } from '../player/Player';
 import { bases } from '../data/bases';
+import { landmarks, worldRoads } from '../data/world';
 
-const pointsOfInterest = [
-  { name: 'Aussichtspunkt', x: -26, z: -92, symbol: '△' },
-  { name: 'Dorf Ventosa', x: -86, z: -18, symbol: '⌂' },
-  { name: 'Markt Ventosa', x: -85, z: -83, symbol: '◇' },
-  { name: 'Markt Mirada', x: -199, z: -149, symbol: '◇' },
-  { name: 'Hafensteg', x: -290, z: -115, symbol: '⚓' },
-  { name: 'Westbrücke', x: -150, z: -100, symbol: '═' },
-  { name: 'Tankstelle', x: 26, z: -95, symbol: '+' },
-  { name: 'Höhenrelais', x: 36, z: 25, symbol: '△' },
-] as const;
+const roadPath = Object.values(worldRoads)
+  .map(points => points.map(([x,z], index) => `${index ? 'L' : 'M'} ${x} ${-z}`).join(' '))
+  .join(' ');
 
 export class WorldMap {
   private root: HTMLElement;
@@ -23,16 +17,17 @@ export class WorldMap {
     this.root.innerHTML = `
       <header class="map-header"><div><span class="eyebrow">CALA VENTRA</span><h2>Inselkarte</h2></div><div><strong id="territory-count">0 / 3 FREI</strong><small>TAB · KARTE SCHLIESSEN</small></div></header>
       <div class="map-layout">
-        <svg viewBox="-400 -400 800 800" role="img" aria-label="Inselkarte mit Basen, Orten und Spielerposition">
+        <svg viewBox="-640 -640 1280 1280" role="img" aria-label="Inselkarte mit Basen, Orten und Spielerposition">
           <defs><filter id="map-shadow"><feDropShadow dx="0" dy="5" stdDeviation="6" flood-opacity=".3"/></filter></defs>
-          <ellipse cx="0" cy="0" rx="337" ry="352" fill="#789a7c" stroke="#dfd19f" stroke-width="18" filter="url(#map-shadow)"/>
-          <path d="M -135 -155 L -65 -210 L 10 -125 L 130 -60" class="map-ridge"/>
-          <path d="M 0 130 L 0 -60 L 100 -151 L 132 -210 M 0 52 L -100 78 L -220 135 L -268 128 M -175 110 L -176 144 L -196 153 L -250 150" class="map-road"/>
-          <path d="M -187 104 L -113 100" class="map-bridge"/>
-          ${pointsOfInterest.map(point => `<g class="map-poi" transform="translate(${point.x},${-point.z})"><circle r="13"/><text class="poi-symbol" text-anchor="middle" y="7">${point.symbol}</text><text class="poi-label" x="19" y="6">${point.name}</text></g>`).join('')}
+          <ellipse cx="0" cy="0" rx="540" ry="560" fill="#789a7c" stroke="#dfd19f" stroke-width="24" filter="url(#map-shadow)"/>
+          <path d="M -310 -220 L -150 -330 L 15 -240 L 185 -300 L 330 -220" class="map-ridge"/>
+          <path d="${roadPath}" class="map-road"/>
+          <path d="M -271 286 L -199 286" class="map-bridge"/>
+          ${landmarks.map(point => `<g class="map-poi" transform="translate(${point.position[0]},${-point.position[1]})"><circle r="13"/><text class="poi-symbol" text-anchor="middle" y="7">${point.symbol}</text><text class="poi-label" text-anchor="${point.labelSide === 'left' ? 'end' : 'start'}" x="${point.labelSide === 'left' ? -19 : 19}" y="6">${point.name}</text></g>`).join('')}
           ${bases.map((base, i) => `<g class="map-base" id="map-${base.id}" transform="translate(${base.flag[0]},${-base.flag[2]})"><circle r="22"/><text class="base-number" text-anchor="middle" y="8">${i + 1}</text><text class="base-label" text-anchor="middle" y="-32">${base.name}</text></g>`).join('')}
           <path id="map-player" d="M 0 -18 L 13 14 L 0 8 L -13 14 Z" fill="#fff" stroke="#244d50" stroke-width="4"/>
-          <text class="map-north" x="-350" y="-320">N ↑</text>
+          <text class="map-north" x="-560" y="-520">N ↑</text>
+          <g class="map-scale"><path d="M 390 515 V 531 M 390 523 H 490 M 490 515 V 531"/><text x="440" y="505" text-anchor="middle">100 M</text></g>
         </svg>
         <section class="map-panel">
           <span class="eyebrow">VERFOLGTES ZIEL</span><h3 id="map-destination"></h3><p id="map-objective"></p>

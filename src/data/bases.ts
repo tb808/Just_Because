@@ -5,15 +5,15 @@ export interface BaseDefinition {
   tanks: Array<{ id: string; x: number; z: number }>;
 }
 export const bases: BaseDefinition[] = [
-  { id: 'orbis', name: 'Relais Orbis', description: 'Das Direktorat kontrolliert von hier die Südküste.', center: [56, 6.2, 24], flag: [48, 6.3, 5],
-    guards: [[12,-49],[26,-29],[37,-12],[48,-16],[78,-25],[30,29],[47,45],[81,45]].map(([x,z],i)=>({id:`enemy-${i}`,x,z})),
-    tanks: [0,1,2].map(i=>({id:`fuel-${i}`,x:63+i*9,z:-12})) },
-  { id: 'porto', name: 'Hafen Mirada', description: 'Befreie den Versorgungshafen und öffne ihn für die Küstenbewohner.', center: [-220, 6.2, -100], flag: [-214, 6.3, -93],
-    guards: [[-247,-118],[-231,-122],[-204,-127],[-191,-91],[-222,-69],[-248,-78]].map(([x,z],i)=>({id:`enemy-porto-${i}`,x,z})),
-    tanks: [0,1].map(i=>({id:`fuel-porto-${i}`,x:-204+i*9,z:-112})) },
-  { id: 'altura', name: 'Station Altura', description: 'Der Höhenposten überwacht die Insel. Sichere den Funkhof.', center: [90, 24.2, 210], flag: [108, 24.3, 212],
-    guards: [[67,189],[88,181],[128,198],[119,227],[79,245],[58,222]].map(([x,z],i)=>({id:`enemy-altura-${i}`,x,z})),
-    tanks: [0,1,2].map(i=>({id:`fuel-altura-${i}`,x:83+i*9,z:194})) },
+  { id: 'orbis', name: 'Relais Orbis', description: 'Das Direktorat kontrolliert von hier die südöstliche Küstenstrasse.', center: [250, 6.2, -150], flag: [225, 6.3, -145],
+    guards: [[220,-178],[242,-181],[270,-177],[282,-145],[272,-118],[244,-116],[218,-126],[253,-145]].map(([x,z],i)=>({id:`enemy-${i}`,x,z})),
+    tanks: [0,1,2].map(i=>({id:`fuel-${i}`,x:241+i*11,z:-169})) },
+  { id: 'porto', name: 'Hafen Mirada', description: 'Befreie den Versorgungshafen an der Westküste und öffne ihn für die Bewohner.', center: [-400, 6.2, -220], flag: [-372, 6.3, -214],
+    guards: [[-428,-250],[-404,-252],[-375,-246],[-370,-210],[-394,-190],[-426,-196]].map(([x,z],i)=>({id:`enemy-porto-${i}`,x,z})),
+    tanks: [0,1].map(i=>({id:`fuel-porto-${i}`,x:-413+i*12,z:-242})) },
+  { id: 'altura', name: 'Station Altura', description: 'Der Höhenposten überwacht die Nordroute. Sichere den Funkhof auf dem Plateau.', center: [300, 34.2, 300], flag: [274, 34.3, 306],
+    guards: [[267,270],[294,267],[327,274],[334,309],[319,334],[284,337]].map(([x,z],i)=>({id:`enemy-altura-${i}`,x,z})),
+    tanks: [0,1,2].map(i=>({id:`fuel-altura-${i}`,x:291+i*11,z:279})) },
 ];
 export const captureDuration = 6;
 export const captureRadius = 12;

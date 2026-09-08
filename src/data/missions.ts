@@ -4,8 +4,8 @@ export interface TraversalObjective {
   requiredState?: PlayerState;
 }
 export const traversalRoute: TraversalObjective[] = [
-  { id: 'relay-one', title: '01 / Über die Dächer', description: 'Zieh dich mit F zum ersten Relais. Löse mit SPACE kurz vor dem Dach.', position: [-22, 35.3, -25], radius: 10 },
-  { id: 'relay-two', title: '02 / Höher hinaus', description: 'Das hohe Relais liegt nordöstlich. Halte Ausschau nach dem goldenen Ring.', position: [36, 56.3, 25], radius: 11 },
-  { id: 'glide', title: '03 / Freier Flug', description: 'Fliege mit C im Wingsuit durch den Ring über der Küstenstrasse.', position: [54, 32, -24], radius: 14, requiredState: 'WINGSUIT' },
-  { id: 'landing', title: '04 / Sanfte Ankunft', description: 'Öffne Q und lande auf dem Dach am südlichen Relais.', position: [80, 20.3, -54], radius: 8, requiredState: 'ON_FOOT' },
+  { id: 'relay-one', title: '01 / Über die Dächer', description: 'Zieh dich mit F zum Relais über Ventosa. Löse mit SPACE kurz vor dem Dach.', position: [34, 34.3, -230], radius: 10 },
+  { id: 'relay-two', title: '02 / Ins Inselinnere', description: 'Das hohe Relais liegt nordöstlich hinter dem Dorf.', position: [112, 54.3, -82], radius: 11 },
+  { id: 'glide', title: '03 / Freier Flug', description: 'Fliege mit C im Wingsuit durch den Ring über der Küstenroute.', position: [160, 35, -120], radius: 14, requiredState: 'WINGSUIT' },
+  { id: 'landing', title: '04 / Sanfte Ankunft', description: 'Öffne Q und lande auf dem Relais vor Orbis.', position: [202, 21.3, -170], radius: 8, requiredState: 'ON_FOOT' },
 ];

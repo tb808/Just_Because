@@ -12,7 +12,7 @@ test('residents move, react to noise, sleep at distance and populate only libera
   const manager={instantiate:async (_:unknown,name:string)=>({root:new TransformNode(name,scene),entries:{animationGroups:[]}})} as unknown as AssetManager;
   const living=new LivingWorld(world); await living.load(manager);
   const resident=scene.getTransformNodeByName('resident-0')!, friendly=scene.getTransformNodeByName('resident-12')!;
-  const player=new Vector3(-85,7,-83), start=resident.position.clone(); living.update(1,player);
+  const player=new Vector3(-70,7,-255), start=resident.position.clone(); living.update(1,player);
   assert.ok(resident.position.x>start.x); assert.ok(living.activeCount>0);
   const walking=resident.position.x-start.x, before=resident.position.x;
   living.noise(resident.position); living.update(1,player); assert.ok(resident.position.x-before>walking*2);
