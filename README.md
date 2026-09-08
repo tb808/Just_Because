@@ -38,6 +38,7 @@ Die ausgegebene lokale Adresse öffnen und **Spielen** klicken. Bei einem defekt
 | F | Greifhaken an eine Oberfläche; erneut lösen |
 | Space während Greifhaken | Seil lösen, Schwung behalten |
 | C / Q | Wingsuit / Fallschirm in der Luft |
+| U | Aus Boden oder Kollision nach oben befreien |
 | Linke / rechte Maustaste | Schiessen / Zielen |
 | J | Alternative Feuertaste |
 | 1 / 2 / R | Gewehr / Raketenwerfer / Nachladen |

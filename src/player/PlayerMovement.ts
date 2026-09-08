@@ -31,10 +31,15 @@ export class PlayerMovement {
   }
   cancelAbilities() { this.setState('FALLING'); }
   markRecoveryPoint(position = this.player.position) { this.recoveryPosition = position.clone(); }
+  unstuck() {
+    this.setState('FALLING'); this.player.position.y += 3; this.player.velocity.set(0, 4.5, 0);
+    this.coyote = this.stalledFor = 0; this.player.body.computeWorldMatrix(true); this.camera.update(0, true); this.onUnstuck();
+  }
   reset() { this.setState('FALLING'); this.player.position.copyFrom(this.spawn); this.player.velocity.setAll(0); this.coyote = this.stalledFor = 0; this.markRecoveryPoint(this.spawn); this.input.clear(); this.camera.update(0, true); this.onReset(); }
   update(dt: number) {
     const p = this.player, v = p.velocity;
     const boundary = worldConfig.size / 2 - 12;
+    if (this.input.take('unstuck')) { this.unstuck(); return; }
     if (this.input.take('reset') || p.position.y < -4 || Math.abs(p.position.x) > boundary || Math.abs(p.position.z) > boundary) { this.reset(); return; }
     const ground = this.scene.pickWithRay(new Ray(p.position, Vector3.Down(), 1.05), m => m.checkCollisions && m !== p.body);
     const grounded = !!ground?.hit && v.y <= 0.1;

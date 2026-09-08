@@ -82,6 +82,14 @@ test('a collision lock returns the player to safety and movement resumes', () =>
   f.player.body.moveWithCollisions = moveWithCollisions;
   f.step(0.5); assert.ok(f.player.position.z > 1); f.dispose();
 });
+test('manual unstuck lifts the player without resetting progress or input', () => {
+  const f = fixture(); f.player.position.y = 0.2; f.player.velocity.set(4, -8, 3);
+  let unstuck = 0, reset = 0; f.controller.onUnstuck = () => unstuck++; f.controller.onReset = () => reset++;
+  f.held.add('forward'); f.pressed.add('unstuck'); f.step(movement.fixedStep);
+  assert.equal(unstuck, 1); assert.equal(reset, 0); assert.equal(f.player.state, 'FALLING');
+  assert.ok(Math.abs(f.player.position.y - 3.2) < 0.001); assert.deepEqual(f.player.velocity.asArray(), [0, 4.5, 0]);
+  assert.equal(f.held.has('forward'), true); f.dispose();
+});
 test('camera retracts in front of an occluding wall', () => {
   const f = fixture(); const wall = MeshBuilder.CreateBox('camera-wall', { width: 12, height: 8, depth: 0.4 }, f.scene);
   wall.position.set(0, 3, -3); wall.checkCollisions = true; wall.computeWorldMatrix(true);

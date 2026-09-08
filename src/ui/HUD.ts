@@ -7,6 +7,7 @@ export class HUD {
   private root: HTMLElement;
   private panel: HTMLElement;
   private start: HTMLButtonElement;
+  private newGame: HTMLButtonElement;
   private status: HTMLElement;
   private state: HTMLElement;
   private speed: HTMLElement;
@@ -14,6 +15,7 @@ export class HUD {
   private metrics: HTMLElement;
   private hint: HTMLElement;
   onStart: () => void = () => {};
+  onNewGame: () => void = () => {};
   onReset: () => void = () => {};
   onSensitivity: (value: number) => void = () => {};
   onQuality: (value: number) => void = () => {};
@@ -28,7 +30,7 @@ export class HUD {
       <footer class="bottom"><div class="identity"><span class="eyebrow">NIKA SERRIN</span><strong id="state">ZU FUSS</strong><div class="health-line"></div><small id="altitude">0 M Ü. M.</small></div><div class="abilities"><div id="ability-grapple"><kbd>F</kbd><span>Greifhaken</span></div><div id="ability-wingsuit"><kbd>C</kbd><span>Wingsuit</span></div><div id="ability-parachute"><kbd>Q</kbd><span>Fallschirm</span></div></div><div class="telemetry"><strong id="speed">000</strong><span>KM/H</span><small id="metrics">WEBGL · INITIALISIERUNG</small></div></footer>
       <div class="pause-shade" id="shade"></div><section class="menu" id="menu" role="dialog" aria-modal="true" aria-labelledby="menu-title">
         <span class="eyebrow">CALA VENTRA / OFFENE INSEL</span><h1 id="menu-title">Eine Insel.<br>Tausend Wege.</h1><p>Durch lebendige Altstädte. Über weite Täler.<br>Entdecke acht Orte und befreie die Insel.</p>
-        <button class="primary" id="start" disabled>INSEL WIRD GELADEN … <span>↗</span></button><p id="loading" class="loading" role="status">Gelände vorbereiten …</p>
+        <div class="menu-actions"><button class="primary" id="start" disabled>INSEL WIRD GELADEN … <span>↗</span></button><button class="secondary new-game" id="new-game" disabled>NEUES SPIEL</button></div><p id="loading" class="loading" role="status">Gelände vorbereiten …</p>
         <div class="controls"><div><kbd>W A S D</kbd><span>Bewegen</span></div><div><kbd>SHIFT</kbd><span>Sprinten</span></div><div><kbd>SPACE</kbd><span>Springen / Seil lösen</span></div><div><kbd>F / C / Q</kbd><span>Haken / Wingsuit / Schirm</span></div><div><kbd>MAUS</kbd><span>Kamera · Mausrad für Zoom</span></div><div><kbd>ESC</kbd><span>Pause</span></div></div>
         <details><summary>Einstellungen & Credits</summary><label>Mausempfindlichkeit<input id="sensitivity" type="range" min="0.0007" max="0.005" step="0.0001" value="0.0022"></label><label>Renderqualität<select id="quality"><option value="1">Hoch</option><option value="1.25" selected>Ausgewogen</option><option value="1.6">Performance</option></select></label><p>3D-Modelle: Kenney · CC0<br>Eigene Welt und Traversal-Strukturen.<br>Movement-Prototyp: Kampf und Fahrzeuge folgen.</p><button id="reset" class="secondary">Zurück zum Startpunkt</button></details>
       </section><div class="toast" id="toast" role="status"></div>`;
@@ -39,15 +41,16 @@ export class HUD {
     details.querySelector('summary')!.insertAdjacentHTML('afterend', '<label>Lautstärke<input id="volume" type="range" min="0" max="1" step="0.05" value="0.35"></label>');
     const credit = details.querySelector('p')!; credit.textContent = '3D-Modelle: Kenney · CC0. Eigene Welt, Ausrüstung und synthetisierte Sounds. Der SUV dient als Nachschubpunkt und ist noch nicht fahrbar.';
     this.element('reset').textContent = 'Einsatz neu starten';
-    controls.insertAdjacentHTML('beforeend','<div><kbd>TAB</kbd><span>Inselkarte öffnen</span></div><div><kbd>N</kbd><span>Nächste Basis verfolgen</span></div>');
+    controls.insertAdjacentHTML('beforeend','<div><kbd>TAB</kbd><span>Inselkarte öffnen</span></div><div><kbd>N</kbd><span>Nächste Basis verfolgen</span></div><div><kbd>U</kbd><span>Aus Boden / Kollision befreien</span></div>');
     controls.insertAdjacentHTML('beforeend','<div><kbd>T</kbd><span>Reise zu entdeckten Orten</span></div><div><kbd>↑ ↓ · E</kbd><span>Im Atlas wählen / bestätigen</span></div>');
     this.root.querySelector('.location')!.innerHTML = '<span id="location-name">VENTOSA</span><small id="location-detail">KÜSTENMARKT · 08:30</small>';
     this.root.insertAdjacentHTML('beforeend','<div class="world-compass"><span>W</span><b id="world-heading">NORDOST</b><span>O</span></div>');
     this.root.querySelector('.mission .eyebrow')!.innerHTML = '<span class="live-dot"></span> EINSATZ';
-    this.panel = this.element('menu'); this.start = this.element('start') as HTMLButtonElement;
+    this.panel = this.element('menu'); this.start = this.element('start') as HTMLButtonElement; this.newGame = this.element('new-game') as HTMLButtonElement;
     this.status = this.element('loading'); this.state = this.element('state'); this.speed = this.element('speed');
     this.altitude = this.element('altitude'); this.metrics = this.element('metrics'); this.hint = this.element('hint');
     this.start.onclick = () => this.onStart();
+    this.newGame.onclick = () => this.onNewGame();
     this.element('reset').onclick = () => this.onReset();
     this.element('sensitivity').oninput = e => this.onSensitivity(Number((e.target as HTMLInputElement).value));
     this.element('quality').onchange = e => this.onQuality(Number((e.target as HTMLSelectElement).value));
@@ -55,11 +58,19 @@ export class HUD {
   }
   element(id: string) { return document.getElementById(id)!; }
   loading(done: number, total: number) { this.status.textContent = `Modelle laden · ${done} / ${total}`; }
-  ready(failures: number) { this.start.disabled = false; this.start.innerHTML = 'SPIELEN <span>↗</span>'; this.status.textContent = failures ? `${failures} Modelle konnten nicht geladen werden; Ersatzmodelle aktiv.` : 'Bereit · Maus & Tastatur · Kopfhörer optional'; }
+  ready(failures: number, hasSave: boolean) {
+    this.start.disabled = !hasSave; this.newGame.disabled = false; this.newGame.hidden = false;
+    this.start.innerHTML = hasSave ? 'FORTFAHREN <span>↗</span>' : 'KEIN SPIELSTAND';
+    this.status.textContent = failures
+      ? `${failures} Modelle konnten nicht geladen werden; Ersatzmodelle aktiv.${hasSave ? ' Spielstand verfügbar.' : ''}`
+      : hasSave ? 'Gespeicherter Fortschritt verfügbar · automatische Speicherung aktiv' : 'Noch kein Spielstand · starte ein neues Spiel';
+    (hasSave ? this.start : this.newGame).focus();
+  }
   pause(paused: boolean) {
     this.panel.hidden = !paused; this.element('shade').hidden = !paused;
     this.root.classList.toggle('playing', !paused);
-    if (paused && !this.start.disabled) { this.start.innerHTML = 'WEITERSPIELEN <span>↗</span>'; this.start.focus(); }
+    if (!paused) { this.start.disabled = false; this.newGame.hidden = true; }
+    if (paused && !this.start.disabled) { this.newGame.hidden = true; this.start.innerHTML = 'WEITERSPIELEN <span>↗</span>'; this.start.focus(); }
   }
   error(message: string) { this.status.textContent = message; this.status.classList.add('error'); }
   private toastTimer?: ReturnType<typeof setTimeout>;
@@ -73,7 +84,7 @@ export class HUD {
     this.speed.textContent = Math.round(player.speed * 3.6).toString().padStart(3, '0');
     this.altitude.textContent = `${Math.max(0, Math.round(player.position.y - 0.9))} M Ü. M.`;
     this.metrics.textContent = `${Math.round(fps)} FPS · ${chunks} AKTIVE SEKTOREN`;
-    this.hint.textContent = player.state === 'ON_FOOT' ? 'SHIFT sprinten · SPACE springen · F auf eine Oberfläche' : 'F Greifhaken · C Wingsuit · Q Fallschirm';
+    this.hint.textContent = player.state === 'ON_FOOT' ? 'SHIFT sprinten · SPACE springen · F auf eine Oberfläche · U befreien' : 'F Greifhaken · C Wingsuit · Q Fallschirm · U befreien';
     for (const [id, state] of [['grapple', 'GRAPPLING'], ['wingsuit', 'WINGSUIT'], ['parachute', 'PARACHUTE']]) this.element(`ability-${id}`).classList.toggle('active', player.state === state);
   }
   updateCombat(combat: CombatSystem) {

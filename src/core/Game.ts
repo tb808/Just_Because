@@ -13,11 +13,11 @@ import { movement } from '../data/config';
 import { MissionManager } from '../missions/MissionManager';
 import { CombatSystem } from '../combat/CombatSystem';
 import { WorldMap } from '../ui/WorldMap';
-import { captureDuration } from '../data/bases';
 import { clearGameSave, loadGameSave, storeGameSave, type GameSave } from './SaveGame';
 import { Atmosphere } from '../world/Atmosphere';
 import { Exploration, validSavedPosition } from '../world/Exploration';
 import { settlements } from '../data/world';
+import { baseCapturePrompt } from '../ui/BaseCapturePrompt';
 
 export class Game {
   private engine: Engine;
@@ -70,12 +70,13 @@ export class Game {
     this.controller.onReset = () => { this.combat.revive(); this.hud.notify('Zurück am Aussichtspunkt · Ausrüstung aufgefüllt.'); };
     this.controller.onUnstuck = () => {
       this.world.chunks.update(1, this.player.position);
-      this.hud.notify('Feststecken erkannt · zur letzten sicheren Position zurückgesetzt.');
+      this.hud.notify('Position befreit · du kannst dich wieder bewegen.');
     };
     this.assetManager.onProgress = (done, total) => this.hud.loading(done, total);
     this.input.onPause = () => { this.running = false; this.map.close(); this.scene.animationsEnabled = false; this.accumulator = 0; this.hud.pause(true); };
     this.hud.onStart = () => void this.start();
-    this.hud.onReset = () => { clearGameSave(); this.controller.reset(); this.missions.reset(); this.combat.reset(); this.exploration.reset(); if(this.atmosphere) this.atmosphere.elapsed=0; this.showCombat=false; this.saveGame(); };
+    this.hud.onNewGame = () => { this.resetProgress(); void this.start(); };
+    this.hud.onReset = () => this.resetProgress();
     this.hud.onVolume = value => this.combat.audio.volume = value;
     this.hud.onSensitivity = value => this.camera.sensitivity = value;
     this.hud.onQuality = value => { this.engine.setHardwareScalingLevel(value); this.atmosphere?.setQuality(value); };
@@ -95,7 +96,7 @@ export class Game {
     this.world.chunks.update(1,this.player.position); this.atmosphere.update(0,this.player.position);
     this.player.state = 'FALLING'; this.player.velocity.setAll(0); this.camera.update(0, true);
     await this.scene.whenReadyAsync(); this.scene.render(); this.ready = true;
-    this.hud.ready(this.assetManager.failures.size);
+    this.hud.ready(this.assetManager.failures.size, !!save);
     if (save) this.hud.notify('Lokaler Spielstand geladen.');
     this.engine.runRenderLoop(() => this.frame());
   }
@@ -138,17 +139,20 @@ export class Game {
         this.hud.update(this.player, this.engine.getFps(), this.world.chunks.activeCount);
         this.hud.updateCombat(this.combat);
         this.hud.updateWorld(this.player, this.atmosphere?.clock ?? '08:30', this.combat.living.activitySummary);
-        if (this.missions.interactionPrompt) this.hud.element('hint').textContent = this.missions.interactionPrompt;
+        const nearbyBase = this.combat.bases.nearby(this.player.position);
+        const interactionPrompt = this.missions.interactionPrompt;
+        if (interactionPrompt) this.hud.element('hint').textContent = interactionPrompt;
         const target = this.controller.grapple.target(); this.hud.element('reticle').classList.toggle('valid', !!target);
         this.hud.element('target-label').textContent = target ? `F · ${Math.round(target.distance)} M` : '';
         this.updateMap();
-        const base=this.combat.bases.tracked, def=base.definition;
-        const cleared=base.guards===def.guards.length&&base.tanks===def.tanks.length;
-        this.hud.element('mission-title').textContent = this.showCombat ? `${def.name}${base.liberated?' · FREI':''}` : (this.missions.tracked?.title ?? 'Cala Ventra erkunden');
-        this.hud.element('mission-detail').textContent = this.showCombat ? (base.liberated?'Die Bewohner sind zurück. Nachschub am SUV verfügbar. N wählt die nächste Basis.':cleared?'Halte den Bereich um die Flagge sechs Sekunden, um diese Basis einzunehmen.':`${def.description} Wachen ausschalten und rote Tanks zerstören.`) : (this.missions.objective?.description ?? 'Erkunde Cala Ventra frei.');
-        const progress = this.showCombat ? (base.guards+base.tanks+base.capture/captureDuration)/(def.guards.length+def.tanks.length+1) : this.missions.progress;
+        const base = nearbyBase ?? (this.showCombat ? this.combat.bases.tracked : undefined);
+        const capture = base ? baseCapturePrompt(base, this.player.position) : undefined;
+        this.hud.element('mission-title').textContent = capture?.title ?? (this.missions.tracked?.title ?? 'Cala Ventra erkunden');
+        this.hud.element('mission-detail').textContent = capture?.detail ?? (this.missions.objective?.description ?? 'Erkunde Cala Ventra frei.');
+        const progress = capture?.progress ?? this.missions.progress;
         this.hud.element('mission-progress').style.width = `${progress * 100}%`;
-        this.hud.element('mission-count').textContent = this.showCombat ? `${base.guards}/${def.guards.length} WACHEN · ${base.tanks}/${def.tanks.length} TANKS${cleared?` · FLAGGE ${Math.floor(base.capture)}/${captureDuration} S`:''}` : `${this.missions.count} · M JOURNAL`;
+        this.hud.element('mission-count').textContent = capture?.count ?? `${this.missions.count} · M JOURNAL`;
+        if (nearbyBase && !interactionPrompt) this.hud.element('hint').textContent = capture!.hint;
         this.uiTimer = 0;
       }
     }
@@ -174,6 +178,11 @@ export class Game {
     const position = this.player.position.asArray() as [number, number, number];
     const save: GameSave = { version: 1, savedAt: Date.now(), player: position, missions: this.missions.saveState(), combat: this.combat.saveState(), world: {discoveredSettlementIds:[...this.exploration.discovered],elapsed:this.atmosphere?.elapsed??0} };
     storeGameSave(save);
+  }
+  private resetProgress() {
+    clearGameSave(); this.controller.reset(); this.missions.reset(); this.combat.reset(); this.exploration.reset();
+    if (this.atmosphere) this.atmosphere.elapsed = 0;
+    this.showCombat = false; this.world.chunks.update(1, this.player.position); this.atmosphere?.update(0, this.player.position); this.saveGame();
   }
   dispose() { this.saveGame(); this.abort.abort(); this.input.dispose(); this.combat.dispose(); this.atmosphere?.dispose(); this.engine.stopRenderLoop(); this.scene.dispose(); this.assetManager.dispose(); this.engine.dispose(); }
 }

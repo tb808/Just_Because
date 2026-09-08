@@ -11,6 +11,13 @@ export class BaseManager {
   get tracked() { return this.states[this.selected]; }
   get liberatedCount() { return this.states.filter(b => b.liberated).length; }
   get complete() { return this.liberatedCount === this.states.length; }
+  nearby(position: Vector3, radius = 110) {
+    return this.states
+      .filter(base => !base.liberated)
+      .map(base => ({ base, distance: Math.hypot(position.x - base.definition.center[0], position.z - base.definition.center[2]) }))
+      .filter(candidate => candidate.distance <= radius)
+      .sort((a, b) => a.distance - b.distance)[0]?.base;
+  }
   next() { this.selected = (this.selected + 1) % this.states.length; }
   update(dt: number, position: Vector3, alive: boolean, destroyed: (id: string) => boolean) {
     for (const base of this.states) {
