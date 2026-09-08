@@ -102,5 +102,7 @@ export class Enemy {
   reset() {
     this.health.reset(); this.animator?.reset(); this.body.position.copyFrom(this.spawn); this.body.metadata = { damageId: this.id }; this.weapon?.setEnabled(true);
     this.visual.rotation.setAll(0); this.visual.rotation.y = Math.PI; this.memory = 0; this.visible = false; this.state = 'PATROL'; this.fireTimer = 1;
+    this.hitTime = this.shotTime = this.perception = this.patrol = 0;
+    if (this.weapon) this.weapon.position.z = 0.84;
   }
 }

@@ -43,5 +43,8 @@ export class Player {
     const pitch = this.state === 'WINGSUIT' ? Math.PI / 2.7 : 0;
     this.visual.rotation.x += (pitch - this.visual.rotation.x) * (1 - Math.exp(-8 * dt));
   }
-  revive() { this.dead = false; this.animator?.reset(); this.combatPose = 'none'; }
+  revive() {
+    this.dead = false; this.animator?.reset(); this.combatPose = 'none';
+    this.visual.rotation.x = 0; this.visual.rotation.z = 0;
+  }
 }

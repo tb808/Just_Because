@@ -1,5 +1,6 @@
 import { AnimationGroup } from '@babylonjs/core/Animations/animationGroup';
 import type { Scene } from '@babylonjs/core/scene';
+import { TransformNode } from '@babylonjs/core/Meshes/transformNode';
 
 /** Blend locomotion separately from arm/torso overlays, so firing doesn't stop the legs. */
 export class CharacterAnimator {
@@ -8,8 +9,19 @@ export class CharacterAnimator {
   private overlays = new Map<string, AnimationGroup>();
   private masked = new Map<string, AnimationGroup>();
   private dead = false;
+  private restPose: Array<{
+    node: TransformNode;
+    position: TransformNode['position'];
+    rotation: TransformNode['rotation'];
+    quaternion: TransformNode['rotationQuaternion'];
+    scaling: TransformNode['scaling'];
+  }> = [];
   constructor(groups: AnimationGroup[], scene: Scene) {
     for (const group of groups) { this.clips.set(group.name.split(':').pop()!, group); group.stop(); }
+    const targets = new Set(groups.flatMap(group => group.targetedAnimations.map(track => track.target)));
+    for (const node of targets) if (node instanceof TransformNode) {
+      this.restPose.push({ node, position: node.position.clone(), rotation: node.rotation.clone(), quaternion: node.rotationQuaternion?.clone() ?? null, scaling: node.scaling.clone() });
+    }
     for (const name of ['holding-both', 'holding-both-shoot', 'interact-right']) {
       const original = this.clips.get(name); if (!original) continue;
       const upper = new AnimationGroup(`upper:${name}`, scene);
@@ -45,6 +57,16 @@ export class CharacterAnimator {
     }
   }
   die() { if (this.dead) return; this.dead = true; this.stop(); this.clips.get('die')?.start(false); }
-  reset() { this.stop(); this.clips.get('die')?.stop(); this.dead = false; }
+  reset() {
+    this.stop(); this.clips.get('die')?.stop();
+    // Stopping a clip leaves its last transforms in place. Idle does not key
+    // every body part (especially the fallen root), so restore the bind pose.
+    for (const pose of this.restPose) {
+      pose.node.position.copyFrom(pose.position); pose.node.rotation.copyFrom(pose.rotation);
+      pose.node.rotationQuaternion = pose.quaternion?.clone() ?? null;
+      pose.node.scaling.copyFrom(pose.scaling);
+    }
+    this.dead = false;
+  }
   private stop() { this.weights.forEach((_, g) => g.stop()); this.weights.clear(); }
 }
