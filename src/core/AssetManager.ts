@@ -34,10 +34,13 @@ export class AssetManager {
     const root = new TransformNode(name, this.scene);
     try {
       const container = await this.load(definition.path);
-      const entries = container.instantiateModelsToScene(n => `${name}:${n}`, false, { doNotInstantiate: definition.animated ?? false });
+      const entries = container.instantiateModelsToScene(n => `${name}:${n}`, !!definition.tint, { doNotInstantiate: !!definition.animated || !!definition.tint });
       entries.rootNodes.forEach(n => n.parent = root);
       entries.animationGroups.forEach(a => a.stop());
       root.getChildMeshes().forEach(m => { m.isPickable = false; m.checkCollisions = false; });
+      if (definition.tint) for (const mesh of root.getChildMeshes()) {
+        const material = new StandardMaterial(`${name}:paint`, this.scene); material.diffuseColor = Color3.FromHexString(definition.tint); material.specularColor = Color3.Black(); mesh.material = material;
+      }
       root.computeWorldMatrix(true);
       const bounds = root.getHierarchyBoundingVectors(true);
       const height = Math.max(0.01, bounds.max.y - bounds.min.y);

@@ -11,6 +11,39 @@
     "sha256": "fcb67d4134412197cdf2191f7c9c6921909ba28f565d5ce1ae16ee28aad21cae"
   },
   {
+    "file": "characters/soldier.glb",
+    "original": "character-b.glb",
+    "author": "Kenney",
+    "page": "https://kenney.nl/assets/blocky-characters",
+    "zip": "https://kenney.nl/media/pages/assets/blocky-characters/8369c0cf30-1749547469/kenney_blocky-characters_20.zip",
+    "license": "CC0-1.0",
+    "checked": "2026-09-07",
+    "bytes": 127160,
+    "sha256": "e79e86f6e5dc862a75e13ab9f5ac574ab1d0fd7b82a3fc4eaa8192a23e4ea6f4"
+  },
+  {
+    "file": "weapons/rifle.glb",
+    "original": "blaster-e.glb",
+    "author": "Kenney",
+    "page": "https://kenney.nl/assets/blaster-kit",
+    "zip": "https://kenney.nl/media/pages/assets/blaster-kit/261d80a716-1753959510/kenney_blaster-kit_2.1.zip",
+    "license": "CC0-1.0",
+    "checked": "2026-09-07",
+    "bytes": 85632,
+    "sha256": "cf70ab883621251e7f1d86cf274b2af8cb106bd09c6f7a471bbd72bcde5eecc6"
+  },
+  {
+    "file": "weapons/launcher.glb",
+    "original": "blaster-j.glb",
+    "author": "Kenney",
+    "page": "https://kenney.nl/assets/blaster-kit",
+    "zip": "https://kenney.nl/media/pages/assets/blaster-kit/261d80a716-1753959510/kenney_blaster-kit_2.1.zip",
+    "license": "CC0-1.0",
+    "checked": "2026-09-07",
+    "bytes": 60856,
+    "sha256": "ca4768cc9ca0d10686c781ff15b69454e5a6088d73ec1439fd2e60053b884db0"
+  },
+  {
     "file": "vegetation/palm.glb",
     "original": "tree_palmDetailedTall.glb",
     "author": "Kenney",

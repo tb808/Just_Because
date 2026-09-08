@@ -1,5 +1,6 @@
 import { Player } from '../player/Player';
 import { stateLabels } from '../player/PlayerState';
+import type { CombatSystem } from '../combat/CombatSystem';
 
 export class HUD {
   private root: HTMLElement;
@@ -15,6 +16,7 @@ export class HUD {
   onReset: () => void = () => {};
   onSensitivity: (value: number) => void = () => {};
   onQuality: (value: number) => void = () => {};
+  onVolume: (value: number) => void = () => {};
   constructor() {
     this.root = document.getElementById('app')!;
     this.root.innerHTML = `
@@ -29,6 +31,14 @@ export class HUD {
         <div class="controls"><div><kbd>W A S D</kbd><span>Bewegen</span></div><div><kbd>SHIFT</kbd><span>Sprinten</span></div><div><kbd>SPACE</kbd><span>Springen / Seil lösen</span></div><div><kbd>F / C / Q</kbd><span>Haken / Wingsuit / Schirm</span></div><div><kbd>MAUS</kbd><span>Kamera · Mausrad für Zoom</span></div><div><kbd>ESC</kbd><span>Pause</span></div></div>
         <details><summary>Einstellungen & Credits</summary><label>Mausempfindlichkeit<input id="sensitivity" type="range" min="0.0007" max="0.005" step="0.0001" value="0.0022"></label><label>Renderqualität<select id="quality"><option value="1">Hoch</option><option value="1.25" selected>Ausgewogen</option><option value="1.6">Performance</option></select></label><p>3D-Modelle: Kenney · CC0<br>Eigene Welt und Traversal-Strukturen.<br>Movement-Prototyp: Kampf und Fahrzeuge folgen.</p><button id="reset" class="secondary">Zurück zum Startpunkt</button></details>
       </section><div class="toast" id="toast" role="status"></div>`;
+    this.root.insertAdjacentHTML('beforeend', `<div class="damage-vignette" id="damage-vignette"></div><div class="combat-top"><span id="alarm">KEIN ALARM</span><span id="score">0000 PUNKTE</span></div><div class="weapon-hud"><span id="weapon-name">STURMGEWEHR · VELA-7</span><div><strong id="ammo">30</strong><span id="reserve"> / 240</span></div><small id="reload-status">1 / 2 WAFFENWECHSEL · R NACHLADEN</small><div class="reload-track"><span id="reload-progress"></span></div></div>`);
+    const controls = this.root.querySelector('.controls')!;
+    controls.insertAdjacentHTML('beforeend', '<div><kbd>LMB / RMB</kbd><span>Schiessen / Zielen</span></div><div><kbd>1 / 2 · R</kbd><span>Waffenwechsel · Nachladen</span></div><div><kbd>E</kbd><span>Nachschub beim SUV</span></div><div><kbd>M</kbd><span>Kampf / Höhenroute</span></div>');
+    const details = this.root.querySelector('details')!;
+    details.querySelector('summary')!.insertAdjacentHTML('afterend', '<label>Lautstärke<input id="volume" type="range" min="0" max="1" step="0.05" value="0.35"></label>');
+    const credit = details.querySelector('p')!; credit.textContent = '3D-Modelle: Kenney · CC0. Eigene Welt, Ausrüstung und synthetisierte Sounds. Der SUV dient als Nachschubpunkt und ist noch nicht fahrbar.';
+    this.element('reset').textContent = 'Einsatz neu starten';
+    this.root.querySelector('.mission .eyebrow')!.innerHTML = '<span class="live-dot"></span> EINSATZ';
     this.panel = this.element('menu'); this.start = this.element('start') as HTMLButtonElement;
     this.status = this.element('loading'); this.state = this.element('state'); this.speed = this.element('speed');
     this.altitude = this.element('altitude'); this.metrics = this.element('metrics'); this.hint = this.element('hint');
@@ -36,6 +46,7 @@ export class HUD {
     this.element('reset').onclick = () => this.onReset();
     this.element('sensitivity').oninput = e => this.onSensitivity(Number((e.target as HTMLInputElement).value));
     this.element('quality').onchange = e => this.onQuality(Number((e.target as HTMLSelectElement).value));
+    this.element('volume').oninput = e => this.onVolume(Number((e.target as HTMLInputElement).value));
   }
   element(id: string) { return document.getElementById(id)!; }
   loading(done: number, total: number) { this.status.textContent = `Modelle laden · ${done} / ${total}`; }
@@ -59,5 +70,23 @@ export class HUD {
     this.metrics.textContent = `${Math.round(fps)} FPS · ${chunks} AKTIVE SEKTOREN`;
     this.hint.textContent = player.state === 'ON_FOOT' ? 'SHIFT sprinten · SPACE springen · F auf eine Oberfläche' : 'F Greifhaken · C Wingsuit · Q Fallschirm';
     for (const [id, state] of [['grapple', 'GRAPPLING'], ['wingsuit', 'WINGSUIT'], ['parachute', 'PARACHUTE']]) this.element(`ability-${id}`).classList.toggle('active', player.state === state);
+  }
+  updateCombat(combat: CombatSystem) {
+    const weapon = combat.weapons.current;
+    this.element('weapon-name').textContent = weapon.definition.name;
+    this.element('ammo').textContent = String(weapon.ammo).padStart(2, '0');
+    this.element('reserve').textContent = ` / ${weapon.reserve}`;
+    this.element('reload-status').textContent = weapon.reloading ? `NACHLADEN · ${weapon.reloadRemaining.toFixed(1)} S` : '1 / 2 WAFFENWECHSEL · R NACHLADEN';
+    this.element('reload-progress').style.width = `${weapon.reloadProgress * 100}%`;
+    this.element('alarm').textContent = combat.liberated ? 'RELAIS GESICHERT' : combat.heat ? `ALARM ${'▮'.repeat(combat.heat)}${'▯'.repeat(3 - combat.heat)}` : 'KEIN ALARM';
+    this.element('alarm').classList.toggle('wanted', combat.heat > 0);
+    this.element('score').textContent = `${String(combat.score).padStart(4, '0')} PUNKTE`;
+    this.element('reticle').classList.toggle('hit', combat.hitFlash > 0);
+    this.element('reticle').classList.toggle('kill', combat.killFlash && combat.hitFlash > 0);
+    this.element('damage-vignette').style.opacity = String(Math.min(0.7, combat.hurtFlash * 2));
+    (this.root.querySelector('.health-line') as HTMLElement).style.transform = `scaleX(${combat.health.current / combat.health.max})`;
+    this.altitude.textContent += ` · ${Math.ceil(combat.health.current)} HP`;
+    if (combat.nearSupply) this.hint.textContent = 'E · Gesundheit und Munition am SUV auffüllen';
+    else this.hint.textContent += ' · LMB schiessen · M Auftrag';
   }
 }

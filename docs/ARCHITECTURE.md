@@ -15,10 +15,13 @@ src/
     Game.ts                     Composition Root, Lifecycle, fester Zeitschritt
     AssetManager.ts             GLB-Cache, Instanzen, Fortschritt, Fallback
     InputManager.ts             Action-Mapping, Pointer Lock, Edge-Trigger
+    CharacterAnimator.ts        Maskierte Oberkörper-Clips und Überblendung
   data/
     assets.ts                   Einzige Quelle für Modellpfade
     config.ts                   Movement-, Kamera- und Weltparameter
     missions.ts                 Traversal-Route
+    weapons.ts                  Damage, Feuerrate, Magazin, Streuung, Projektile
+    enemies.ts                  Wahrnehmung, Angriffswerte, Spawnpositionen
     contracts.ts                Verträge für spätere Gameplay-Systeme
   player/
     Player.ts                   Kollisionskörper, Modell, Animation
@@ -35,10 +38,11 @@ src/
     ChunkManager.ts             Distanzaktivierung und Dekorationsinstanzen
   missions/MissionManager.ts    datengetriebene Traversal-Prüfpunkte
   ui/HUD.ts                    HTML-HUD, Start, Pause, Einstellungen
-  systems/                     später: Health, Wanted, Destructible
-  combat/                      später: Weapons, Projectiles, Explosions
+  systems/                     HealthComponent, DestructibleComponent
+  combat/                      CombatSystem, Weapon, WeaponManager, DamageSystem,
+                               ProjectileManager, ExplosionSystem, CombatEffects, CombatAudio
   vehicles/                    später: Vehicle, CarController, HelicopterController
-  ai/                          später: Enemy, EnemyController, EnemyManager
+  ai/                          Enemy (kompakte FSM), EnemyManager
 public/assets/
   characters/ vehicles/ buildings/ vegetation/ weapons/
   props/ environment/ effects/ audio/ licenses/
@@ -67,6 +71,20 @@ flowchart LR
   Player --> MissionManager
   Player --> HUD
   MissionManager --> HUD
+  Game --> CombatSystem
+  InputManager --> WeaponManager
+  CombatSystem --> WeaponManager
+  CombatSystem --> EnemyManager
+  CombatSystem --> ExplosionSystem
+  WeaponManager --> DamageSystem
+  WeaponManager --> ProjectileManager
+  ProjectileManager --> ExplosionSystem
+  EnemyManager --> DamageSystem
+  ExplosionSystem --> DamageSystem
+  DamageSystem --> HealthComponent
+  HealthComponent --> DestructibleComponent
+  DestructibleComponent --> ExplosionSystem
+  CombatSystem --> HUD
 ```
 
 Explizite Konstruktor-Abhängigkeiten für den kleinen Slice. Später typisierte Domain-Events (`damageApplied`, `entityDestroyed`, `baseLiberated`, `heatChanged`), keine globalen Variablen oder generischen Service-Locator. Render-Update ist von Simulation getrennt. Simulation 120 Hz, begrenztes Aufholen nach Tabwechsel; KI später 5–10 Hz, Streaming 2 Hz, HUD 10 Hz.
@@ -85,7 +103,21 @@ Exklusiv: `ON_FOOT`, `FALLING` (auch aufsteigender Sprung), `GRAPPLING`, `WINGSU
 
 Position und Geschwindigkeit gehören genau einem Controller. Abilities beeinflussen Geschwindigkeit, nie eigenständig Transform oder Kollision. Kameraposition ist nicht Spielerposition. Welt verwendet Meter, Sekunden und +Y oben.
 
-## Damage-System (nächste Kampfphasen)
+## Implementierter Kampfstand
+
+`CombatSystem` verbindet Module und zählt die Ziele des einen Basisauftrags. Es enthält nicht Ballistik, Waffenwerte oder KI-Verhalten. `Weapon` verwaltet Magazin, Reserve, Abklingzeit und Nachladen ohne Renderer. `WeaponManager` löst Eingabeimpulse aus, richtet die Mündung auf den Kamera-Raycast aus und prüft die Schusslinie erneut ab der Mündung. Waffenwechsel 1/2, R Nachladen; Rücktaste übernimmt den bisherigen Reset.
+
+`DamageSystem` registriert stabile IDs, HP, Fraktion, Position und Radius. Schaden und Tod laufen über getrennte Callbacks. Gegner beschiessen einander nicht. Respawn gewährt drei Sekunden Immunität. Nach sieben Sekunden ohne Treffer regeneriert der Spieler; der SUV ist ein Nachschubpunkt. Tod stoppt die Fähigkeiten und führt nach zwei Sekunden zum Aussichtspunkt.
+
+`ProjectileManager` hält maximal acht Raketen und prüft pro Update das vollständige zurückgelegte Segment. `ExplosionSystem` verarbeitet maximal vier der höchstens 32 vorgemerkten Explosionen pro Frame. Distanz reduziert Schaden; Gebäudedeckung reduziert ihn zusätzlich um 85 %. Drei rote Tanks besitzen je 80 HP, einen deaktivierbaren Kollisionsproxy und ein eigenes Wrack. Deren Explosionen können weitere Tanks auslösen. Effekte sind auf 128 Partikel und 24 Tracer begrenzt. Sounds entstehen lokal über Web Audio.
+
+Die acht Wachen prüfen Wahrnehmung zeitversetzt etwa vier- bis fünfmal pro Sekunde. Bewegung und Beschuss laufen mit dem begrenzten Render-dt; das Spieler-Movement bleibt bei 120 Hz. Die aktive FSM umfasst PATROL, ALERT, COMBAT, SEARCH und RETURN. Kein Navmesh, keine bewusste Deckungswahl, keine Verstärkung. Die Alarmanzeige 0–3 ergibt sich aus suchenden/kämpfenden Wachen. Der aktuelle Befreiungsauftrag ist bewusst konkret: acht Wachen und drei Tanks. Eine verallgemeinerte Objective-Integration folgt später.
+
+`CharacterAnimator` blendet Bewegung und Oberkörperhaltung getrennt. Eine Ziel-/Eigenschaftskombination wird nur von einer aktiven Ebene gesteuert, damit Laufanimationen die Schusshaltung nicht abschwächen. Schuss-, Interaktions-/Nachlade- und Todesclips stammen aus dem lizenzierten Charakterpack. Waffen ergänzen prozeduralen Rückstoss und Absenken beim Nachladen; Gegner kippen bei Treffern kurz zur Seite. Pause hält auch die Babylon-Animationen an. Hand-IK und Ragdolls sind nicht enthalten.
+
+Massstab: Welt in Metern. Spielfigur 1,75 m; Soldat 1,82 m; SUV von 1,65 auf 2,15 m; Haus von 7 auf 11 m; Depot von 10 auf 16 m; Tanks von 5 auf 6 m. Collider folgen den gemessenen Modellgrenzen. Häuser stehen weiter auseinander; Tankabstände ermöglichen Kettenreaktionen, ohne Modelle zu überlappen.
+
+## Damage-System: spätere Erweiterungen
 
 `DamageEvent { sourceId, targetId, amount, type, hitPoint, impulse? }`; Typen bullet/explosion/collision. `HealthComponent` begrenzt HP, ignoriert Schaden nach Tod und erzeugt genau ein death-Event. `DamageSystem` löst Entity-ID auf, wendet Teamregeln und Damage-Multiplikatoren an. `ExplosionSystem` sucht Ziele räumlich, berechnet Distanzabfall, optional Sichtschutz, Schaden und Impuls. Kettenreaktionen über begrenzte Queue statt Rekursion. `DestructibleComponent`: INTACT → DESTROYED, Collider entfernen/ersetzen, Wrack zeigen, Mission benachrichtigen. Partikel und Trümmer gepoolt, kurze Lebensdauer, harte Obergrenzen. Waffenwerte sind Daten; Raketen/Granaten bewegen sich als Projektile mit segmentweisem Raycast gegen Tunneling.
 

@@ -1,7 +1,7 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 
 // Only these already-reviewed CC0 packs. Resolve the author's current download link.
-const packs = ['nature-kit', 'car-kit', 'blocky-characters', 'city-kit-suburban', 'city-kit-industrial', 'city-kit-roads'];
+const packs = ['nature-kit', 'car-kit', 'blocky-characters', 'city-kit-suburban', 'city-kit-industrial', 'city-kit-roads', 'blaster-kit'];
 await mkdir('.cache/assets', { recursive: true });
 for (const pack of packs) {
   const page = `https://kenney.nl/assets/${pack}`;

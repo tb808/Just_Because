@@ -1,7 +1,7 @@
 export const bindings = {
   forward: 'KeyW', back: 'KeyS', left: 'KeyA', right: 'KeyD',
   sprint: 'ShiftLeft', jump: 'Space', grapple: 'KeyF', parachute: 'KeyQ',
-  wingsuit: 'KeyC', interact: 'KeyE', reset: 'KeyR',
+  wingsuit: 'KeyC', interact: 'KeyE', reset: 'Backspace', reload: 'KeyR', rifle: 'Digit1', launcher: 'Digit2', mission: 'KeyM', fire: 'KeyJ',
   lookLeft: 'ArrowLeft', lookRight: 'ArrowRight', lookUp: 'ArrowUp', lookDown: 'ArrowDown',
 } as const;
 type Action = keyof typeof bindings;
@@ -14,6 +14,7 @@ export class InputManager {
   lookY = 0;
   zoom = 0;
   aiming = false;
+  firing = false;
   dragMode = false;
   onPause: () => void = () => {};
   get locked() { return document.pointerLockElement === this.canvas || this.dragMode; }
@@ -31,8 +32,8 @@ export class InputManager {
     window.addEventListener('mousemove', e => {
       if (document.pointerLockElement === this.canvas || (this.dragMode && (e.buttons & 2))) { this.lookX += e.movementX; this.lookY += e.movementY; }
     }, { signal });
-    window.addEventListener('mousedown', e => { if (this.locked && !this.dragMode && e.button === 2) this.aiming = true; }, { signal });
-    window.addEventListener('mouseup', e => { if (e.button === 2) this.aiming = false; }, { signal });
+    canvas.addEventListener('mousedown', e => { if (this.locked) { if (e.button === 0) { this.firing = true; this.pressed.add(bindings.fire); } if (e.button === 2) this.aiming = true; } }, { signal });
+    window.addEventListener('mouseup', e => { if (e.button === 2) this.aiming = false; if (e.button === 0) this.firing = false; }, { signal });
     canvas.addEventListener('contextmenu', e => e.preventDefault(), { signal });
     canvas.addEventListener('wheel', e => { if (this.locked) { this.zoom += Math.sign(e.deltaY); e.preventDefault(); } }, { signal, passive: false });
     document.addEventListener('pointerlockchange', () => { if (!this.locked) { this.clear(); this.onPause(); } }, { signal });
@@ -42,6 +43,6 @@ export class InputManager {
   down(action: Action) { return this.held.has(bindings[action]) || (action === 'sprint' && this.held.has('ShiftRight')); }
   take(action: Action) { const key = bindings[action]; const value = this.pressed.has(key); this.pressed.delete(key); return value; }
   axes() { return { x: Number(this.down('right')) - Number(this.down('left')), z: Number(this.down('forward')) - Number(this.down('back')) }; }
-  clear() { this.held.clear(); this.pressed.clear(); this.lookX = this.lookY = this.zoom = 0; this.aiming = false; }
+  clear() { this.held.clear(); this.pressed.clear(); this.lookX = this.lookY = this.zoom = 0; this.aiming = this.firing = false; }
   dispose() { this.abort.abort(); }
 }

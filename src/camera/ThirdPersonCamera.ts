@@ -8,11 +8,16 @@ import { Player } from '../player/Player';
 
 export class ThirdPersonCamera {
   readonly camera: FreeCamera;
-  yaw = 0.06;
-  pitch = 0.2;
+  yaw = 0.885;
+  pitch = -0.045;
   sensitivity = cameraConfig.sensitivity;
   private distance = cameraConfig.distance;
   private currentDistance = cameraConfig.distance;
+  private shake = 0;
+  private time = 0;
+  private shoulder = 0.8;
+  kick(recoil: number) { this.pitch += recoil; this.shake = Math.min(0.4, this.shake + recoil * 2); }
+  blast(strength: number) { this.shake = Math.min(0.65, this.shake + strength); }
   constructor(private scene: Scene, private player: Player, private input: InputManager) {
     this.camera = new FreeCamera('third-person', new Vector3(0, 15, -100), scene);
     this.camera.minZ = 0.1; this.camera.maxZ = 1100; this.camera.fov = 0.9; scene.activeCamera = this.camera;
@@ -31,7 +36,8 @@ export class ThirdPersonCamera {
     const desired = aiming ? 3.2 : this.player.state === 'WINGSUIT' ? 11 : this.player.speed > 10 ? this.distance + 1.5 : this.distance;
     this.currentDistance += (desired - this.currentDistance) * (1 - Math.exp(-5 * dt));
     const right = new Vector3(Math.cos(this.yaw), 0, -Math.sin(this.yaw));
-    const target = this.player.position.add(new Vector3(0, 0.65, 0)).add(right.scale(aiming ? 0.65 : 0.2));
+    this.shoulder += ((aiming ? 0.7 : 0.8) - this.shoulder) * (1 - Math.exp(-10 * dt));
+    const target = this.player.position.add(new Vector3(0, 0.85, 0)).add(right.scale(this.shoulder));
     const wanted = target.subtract(this.forward.scale(this.currentDistance));
     const smoothPosition = snap ? wanted : Vector3.Lerp(this.camera.position, wanted, 1 - Math.exp(-cameraConfig.smoothing * dt));
     const offset = smoothPosition.subtract(target), length = offset.length(), direction = offset.normalize();
@@ -43,6 +49,9 @@ export class ThirdPersonCamera {
     }
     this.camera.position.copyFrom(target.add(direction.scale(safe)));
     this.camera.setTarget(target);
+    this.time += dt; this.shake *= Math.exp(-9 * dt);
+    this.camera.rotation.x += Math.sin(this.time * 61) * this.shake * 0.03;
+    this.camera.rotation.z = Math.sin(this.time * 47) * this.shake * 0.025;
     const fov = aiming ? 0.68 : 0.9 + Math.min(this.player.speed / 200, 0.2);
     this.camera.fov += (fov - this.camera.fov) * (1 - Math.exp(-4 * dt));
   }

@@ -1,0 +1,50 @@
+import { AnimationGroup } from '@babylonjs/core/Animations/animationGroup';
+import type { Scene } from '@babylonjs/core/scene';
+
+/** Blend locomotion separately from arm/torso overlays, so firing doesn't stop the legs. */
+export class CharacterAnimator {
+  private weights = new Map<AnimationGroup, number>();
+  private clips = new Map<string, AnimationGroup>();
+  private overlays = new Map<string, AnimationGroup>();
+  private masked = new Map<string, AnimationGroup>();
+  private dead = false;
+  constructor(groups: AnimationGroup[], scene: Scene) {
+    for (const group of groups) { this.clips.set(group.name.split(':').pop()!, group); group.stop(); }
+    for (const name of ['holding-both', 'holding-both-shoot', 'interact-right']) {
+      const original = this.clips.get(name); if (!original) continue;
+      const upper = new AnimationGroup(`upper:${name}`, scene);
+      for (const target of original.targetedAnimations) if (/arm|torso|head/.test(target.target.name)) upper.addTargetedAnimation(target.animation, target.target);
+      this.overlays.set(name, upper);
+    }
+  }
+  update(dt: number, locomotion: string, overlay?: string) {
+    if (this.dead) return;
+    const upper = overlay ? this.overlays.get(overlay) : undefined;
+    let base = this.clips.get(locomotion) ?? this.clips.get('idle');
+    if (base && upper) {
+      const key = `${locomotion}:${overlay}`;
+      let masked = this.masked.get(key);
+      if (!masked) {
+        masked = new AnimationGroup(`lower:${key}`, base.getScene());
+        // A target/property belongs to one layer: a full-weight walk must not
+        // average the raised shooting arms back toward the walking pose.
+        const covered = upper.targetedAnimations;
+        for (const target of base.targetedAnimations) {
+          if (!covered.some(t => t.target === target.target && t.animation.targetProperty === target.animation.targetProperty)) masked.addTargetedAnimation(target.animation, target.target);
+        }
+        this.masked.set(key, masked);
+      }
+      base = masked;
+    }
+    for (const group of [base, upper]) if (group && !this.weights.has(group)) { group.start(true); group.setWeightForAllAnimatables(0); this.weights.set(group, 0); }
+    for (const [group, value] of this.weights) {
+      const desired = group === upper || group === base ? 1 : 0;
+      const next = value + (desired - value) * (1 - Math.exp(-18 * dt));
+      group.setWeightForAllAnimatables(next); this.weights.set(group, next);
+      if (desired === 0 && next < 0.005) { group.stop(); this.weights.delete(group); }
+    }
+  }
+  die() { if (this.dead) return; this.dead = true; this.stop(); this.clips.get('die')?.start(false); }
+  reset() { this.stop(); this.clips.get('die')?.stop(); this.dead = false; }
+  private stop() { this.weights.forEach((_, g) => g.stop()); this.weights.clear(); }
+}

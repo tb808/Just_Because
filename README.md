@@ -1,6 +1,6 @@
 # Cala Ventra · Freier Fall
 
-Ein eigenständiger clientseitiger Third-Person-Movement-Prototyp. TypeScript, Babylon.js 8.56.2 und Vite 7.3.6. Kein Backend, Login oder externer Asset-Server zur Laufzeit.
+Ein eigenständiger clientseitiger Third-Person-Actionprototyp. TypeScript, Babylon.js 8.56.2 und Vite 7.3.6. Kein Backend, Login oder externer Asset-Server zur Laufzeit.
 
 ## Starten
 
@@ -21,7 +21,7 @@ Auf der Entwicklungsmaschine war der globale npm-Wrapper defekt. Der funktionier
 
 ## Bereits spielbar
 
-* Kleine Inselregion mit Küste, Meer, Hügeln, Dorf, Strassen, Brücke, Tankstelle und unbewohntem Basisgelände.
+* Kleine Inselregion mit Küste, Meer, Hügeln, Dorf, Strassen, Brücke, Tankstelle und bewachtem Basisgelände.
 * Animierte Kenney-Spielfigur, Laufen/Sprinten/Springen, Kollision und weiche Third-Person-Kamera mit Zoom und Hindernisprüfung.
 * Greifhaken mit Sichtlinie, 135-m-Reichweite, Seil, Beschleunigung, automatischem Lösen am Ziel und Momentum.
 * Wingsuit mit Dive/Climb-Verhalten, Luftwiderstand, Steuerung und sichtbarer Membran.
@@ -29,6 +29,11 @@ Auf der Entwicklungsmaschine war der globale npm-Wrapper defekt. Der funktionier
 * Datengetriebene Höhenroute mit vier Checkpoints, Zeit und Abschlussmeldung. Danach freies Erkunden.
 * HTML-HUD, Pause, Empfindlichkeit, Renderqualität, Rücksetzen und Maus-Fallback.
 * Lokale GLB-Assets, Cache und Instanzen, 64 Terrain-Kollisionsteile, Distanzaktivierung der Dekoration.
+* VELA-7-Sturmgewehr und NOVA-Raketenwerfer: Magazine, Reserve, Nachladen, Streuung, Rückstoss, Mündungsblitze und Einschläge. Schüsse prüfen Hindernisse ab der Waffenmündung.
+* Acht animierte Wachen: Patrouille, Sichtkegel/Sichtlinie, Schussgeräusche, Verfolgung, Beschuss, Suche und Rückkehr. Trefferreaktion und Todesanimation.
+* Drei rote Treibstofftanks: Schaden, Explosion, Wrackzustand und Kettenreaktionen. Gepoolte Raketen, Feuer, Rauch, Funken und Trümmer; synthetisierte Sounds mit Lautstärkeregler.
+* Operation Brandung: 8 Wachen und 3 Tanks ausschalten, Relais Orbis sichern. Lebenspunkte, Trefferanzeige, Punkte, einfacher Alarm und automatischer Respawn.
+* Grösserer SUV als Nachschubpunkt. Einheitlicher Massstab: Spielfigur 1,75 m, SUV 2,15 m, Dorfhaus 11 m, Depot 16 m, Tanks 6 m. Kollisionsproxies werden aus den skalierten Modellgrenzen abgeleitet.
 
 ## Steuerung
 
@@ -44,19 +49,24 @@ Auf der Entwicklungsmaschine war der globale npm-Wrapper defekt. Der funktionier
 | Mausrad | Zoom |
 | Rechte Maustaste | Schulterkamera; im Maus-Fallback: ziehen zum Drehen |
 | Pfeiltasten | Zusätzliche Kamerasteuerung |
-| R | Zurück zum Aussichtspunkt; Checkpoints behalten |
+| Linke Maustaste / J | Schiessen; halten für Dauerfeuer |
+| 1 / 2 | Sturmgewehr / Raketenwerfer |
+| R | Nachladen |
+| E | Gesundheit und Munition am SUV auffüllen |
+| M | Kampfauftrag / Höhenroute anzeigen |
+| Rücktaste | Zurück zum Aussichtspunkt, Ausrüstung auffüllen; Einsatzfortschritt behalten |
 | Esc | Pause |
 
 Im integrierten Browser kann Pointer Lock blockiert sein. Das Spiel aktiviert dann automatisch Rechtsziehen/Pfeiltasten. Für unbegrenzte Mausrotation einen eigenständigen Browser-Tab benutzen. Keine Touch-/Mobilsteuerung implementiert.
 
-Tipp: Das erste Relais steht direkt vor dir. Ziel möglichst hoch setzen, F drücken, kurz vor dem Dach Space lösen. Mit der Kamera lenken; W im Wingsuit senkt die Flugbahn zusätzlich. Q bremst den Sinkflug. Der letzte Checkpoint verlangt eine Bodenlandung.
+Tipp: Der Startblick zeigt auf die roten Tanks der Basis. Mit **2** eine Rakete auswählen, zielen und feuern. Eine gut platzierte Explosion löst eine Kettenreaktion aus. Mit **F** hoch an ein Gebäude ziehen und mit **Space** lösen. **C** öffnet den Wingsuit, **Q** bremst den Sinkflug. Im Wingsuit sind die Hände belegt; im Fallschirm kann geschossen werden. **E** am SUV neben der Strasse füllt Gesundheit und Munition auf.
 
 ## Projekt und Planung
 
 * [Architektur, Klassenkommunikation, Zustände und zukünftige Systeme](docs/ARCHITECTURE.md)
 * [Assets, Quellen, Formate, Lizenzen und Stilentscheidung](CREDITS.md)
 * [Prüfergebnisse und bekannte Grenzen](docs/VALIDATION.md)
-* `src/data/assets.ts`: alle Modellpfade; `src/data/config.ts`: Movement-Tuning; `src/data/contracts.ts`: Damage-/Vehicle-/Enemy-Verträge.
+* `src/data/assets.ts`: Modelle/Massstab; `src/data/config.ts`: Movement; `src/data/weapons.ts`: Waffenwerte; `src/data/enemies.ts`: Wachen; `src/data/contracts.ts`: zukünftige Verträge.
 
 ## Testen und statisch bereitstellen
 
@@ -70,12 +80,12 @@ npm run preview
 
 ## Nächste Entwicklungsschritte
 
-1. Höhenroute spielen und Beschleunigung, Lösen, Landen abstimmen; Animationen überblenden, kleines Vaulting und ausgearbeitete Flugausrüstung ergänzen.
+1. Kampf und Höhenroute spielen, Treffergefühl und Movement abstimmen; kleines Vaulting und ausgearbeitete Flugausrüstung ergänzen.
 2. Geparkten SUV durch Vehicle/CarController fahrbar machen, Ein-/Ausstieg und sichere Übergabe des Momentums.
-3. Sturmgewehr/Raketenwerfer → Health/Explosionen → zerstörbare Tanks, jeweils mit Build-/Laufzeitprüfung.
-4. 5–10 Gegner → Alarm → Basisziele/Befreiung. Erst danach Welt vergrössern.
+3. KI um Navigation und explizite Deckungspunkte erweitern; Alarm mit Abklingzeit und begrenzten Verstärkungen.
+4. Basisauftrag in das allgemeine datengetriebene Missionssystem übernehmen. Erst danach Welt vergrössern.
 
-Das ist **noch nicht der komplette Action-Vertical-Slice**: Fahrzeuge sind Dekoration; Kampf, Zerstörung, Gegner, Alarm und Basisbefreiung sind noch nicht implementiert. Das Streaming aktiviert bereits geladene Dekoration nach Distanz, entlädt aber noch keine Asset-Dateien. Keine Havok-Physik, kein Spielstand, keine Sounds, keine WebGPU-Option. Es gibt kein Savegame; Neuladen setzt die Route zurück.
+Das ist **noch nicht der komplette Action-Vertical-Slice**: Der SUV ist noch nicht fahrbar. Die Gegner verwenden direkte Bewegung mit Kollision, noch kein Navmesh und keine strategische Deckungswahl. Alarm 0–3 zeigt aktive Gegnerreaktion; es gibt noch keine Verstärkungen. Nur Tanks sind zerstörbar, Gebäude bleiben stehen. Animationen kombinieren vorhandene Kenney-Clips mit Maskierung, Überblendung und prozeduralem Waffenrückstoss; noch kein Hand-IK oder physikalische Ragdolls. Das Streaming aktiviert geladene Dekoration, entlädt aber noch keine Asset-Dateien. Keine Havok-Physik und keine WebGPU-Option. Kein Savegame; Neuladen setzt den Einsatz zurück.
 
 ## Assets reproduzieren
 

@@ -23,6 +23,7 @@ export class PlayerMovement {
     if (state !== 'GRAPPLING') this.grapple.release();
     this.wingsuit.show(state === 'WINGSUIT'); this.parachute.show(state === 'PARACHUTE'); this.player.state = state;
   }
+  cancelAbilities() { this.setState('FALLING'); }
   reset() { this.setState('FALLING'); this.player.position.copyFrom(this.spawn); this.player.velocity.setAll(0); this.coyote = 0; this.input.clear(); this.camera.update(0, true); this.onReset(); }
   update(dt: number) {
     const p = this.player, v = p.velocity;

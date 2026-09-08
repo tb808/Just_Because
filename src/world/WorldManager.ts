@@ -10,10 +10,14 @@ import { AssetManager } from '../core/AssetManager';
 import { assets, type AssetDefinition } from '../data/assets';
 import { createTerrain, terrainHeight } from './Terrain';
 import { ChunkManager } from './ChunkManager';
+import type { TransformNode } from '@babylonjs/core/Meshes/transformNode';
+export interface WorldDestructible { id: string; root: TransformNode; collider: Mesh }
 
 export class WorldManager {
   readonly chunks = new ChunkManager();
   readonly spawn = new Vector3(-26, 8, -92);
+  readonly destructibles: WorldDestructible[] = [];
+  readonly supply = new Vector3(10, 7, -69);
   private materials = new Map<string, StandardMaterial>();
   constructor(private scene: Scene, private assetsManager: AssetManager) {}
   material(color: string) {
@@ -73,14 +77,15 @@ export class WorldManager {
       const b = instance.root.getHierarchyBoundingVectors(true);
       const size = b.max.subtract(b.min), center = b.max.add(b.min).scale(0.5);
       const proxy = this.box(`${name}-collider`, center.x, center.y, center.z, size.x, size.y, size.z, '#ffffff'); proxy.visibility = 0;
+      if (name.startsWith('fuel-')) { proxy.metadata = { damageId: name }; this.destructibles.push({ id: name, root: instance.root, collider: proxy }); }
     } else this.chunks.add(instance.root);
     return instance;
   }
   private async decorate() {
     await Promise.all([
       ...[-62, -88, -114].flatMap((x, i) => [-48, -16, 18].map((z, j) => this.place(assets.environment.house, `house-${i}-${j}`, x, z, terrainHeight(x, z), true))),
-      this.place(assets.environment.warehouse, 'depot', 63, 24, 6.2, true),
-      ...[0, 1, 2].map(i => this.place(assets.environment.tank, `fuel-${i}`, 72, -1 + i * 9, 6.2, true)),
+      this.place(assets.environment.warehouse, 'depot', 65, 29, 6.2, true),
+      ...[0, 1, 2].map(i => this.place(assets.environment.tank, `fuel-${i}`, 63 + i * 9, -12, 6.2, true)),
       this.place(assets.environment.container, 'container', 42, 39, 6.2, true),
       this.place(assets.vehicles.car, 'parked-car', 10, -69, 6.2, true),
     ]);

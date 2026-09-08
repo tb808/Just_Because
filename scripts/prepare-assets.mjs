@@ -29,6 +29,9 @@ async function embedTextures(source) {
 }
 const files = [
   ['blocky-characters','GLB format','character-f.glb','characters/nika.glb'],
+  ['blocky-characters','GLB format','character-b.glb','characters/soldier.glb'],
+  ['blaster-kit','GLB format','blaster-e.glb','weapons/rifle.glb'],
+  ['blaster-kit','GLB format','blaster-j.glb','weapons/launcher.glb'],
   ['nature-kit','GLTF format','tree_palmDetailedTall.glb','vegetation/palm.glb'],
   ['nature-kit','GLTF format','tree_oak.glb','vegetation/tree.glb'],
   ['nature-kit','GLTF format','rock_largeA.glb','environment/rock.glb'],

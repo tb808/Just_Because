@@ -10,6 +10,7 @@ import { WorldManager } from '../world/WorldManager';
 import { HUD } from '../ui/HUD';
 import { movement } from '../data/config';
 import { MissionManager } from '../missions/MissionManager';
+import { CombatSystem } from '../combat/CombatSystem';
 
 export class Game {
   private engine: Engine;
@@ -21,6 +22,8 @@ export class Game {
   private world: WorldManager;
   private controller: PlayerMovement;
   private missions: MissionManager;
+  private combat: CombatSystem;
+  private showCombat = true;
   private hud = new HUD();
   private running = false;
   private accumulator = 0;
@@ -35,12 +38,17 @@ export class Game {
     this.camera = new ThirdPersonCamera(this.scene, this.player, this.input);
     this.controller = new PlayerMovement(this.player, this.input, this.camera, this.scene, this.world.spawn);
     this.missions = new MissionManager(this.scene);
+    this.combat = new CombatSystem(this.scene, this.player, this.input, this.camera, this.world);
+    this.combat.onMessage = message => this.hud.notify(message);
+    this.combat.onRespawn = () => this.controller.reset();
+    this.combat.onDeath = () => this.controller.cancelAbilities();
     this.missions.onAdvance = message => this.hud.notify(message);
-    this.controller.onReset = () => this.hud.notify('Zurück am Aussichtspunkt. Die Höhenroute bleibt aktiv.');
+    this.controller.onReset = () => { this.combat.revive(); this.hud.notify('Zurück am Aussichtspunkt · Ausrüstung aufgefüllt.'); };
     this.assetManager.onProgress = (done, total) => this.hud.loading(done, total);
-    this.input.onPause = () => { this.running = false; this.accumulator = 0; this.hud.pause(true); };
+    this.input.onPause = () => { this.running = false; this.scene.animationsEnabled = false; this.accumulator = 0; this.hud.pause(true); };
     this.hud.onStart = () => void this.start();
-    this.hud.onReset = () => { this.controller.reset(); this.missions.reset(); };
+    this.hud.onReset = () => { this.controller.reset(); this.missions.reset(); this.combat.reset(); };
+    this.hud.onVolume = value => this.combat.audio.volume = value;
     this.hud.onSensitivity = value => this.camera.sensitivity = value;
     this.hud.onQuality = value => this.engine.setHardwareScalingLevel(Math.max(1, window.devicePixelRatio) * value);
     window.addEventListener('resize', () => this.engine.resize(), { signal: this.abort.signal });
@@ -48,13 +56,15 @@ export class Game {
   }
   async init() {
     await Promise.all([this.world.create(), this.player.load(this.assetManager)]);
+    await this.combat.load(this.assetManager);
     this.player.position.copyFrom(this.world.spawn); this.camera.update(0, true);
     await this.scene.whenReadyAsync(); this.scene.render();
     this.hud.ready(this.assetManager.failures.size);
     this.engine.runRenderLoop(() => this.frame());
   }
   private async start() {
-    try { await this.input.lock(); this.running = true; this.accumulator = 0; this.input.clear(); this.hud.pause(false); if (this.input.dragMode) this.hud.notify('Kamera: rechte Maustaste ziehen oder Pfeiltasten. ESC pausiert.'); }
+    this.combat.audio.start();
+    try { await this.input.lock(); this.running = true; this.scene.animationsEnabled = true; this.accumulator = 0; this.input.clear(); this.hud.pause(false); if (this.input.dragMode) this.hud.notify('Kamera: rechte Maustaste ziehen oder Pfeiltasten. ESC pausiert.'); }
     catch { this.hud.error('Die Maussperre wurde blockiert. Öffne das Spiel in einem eigenen Browser-Tab und klicke erneut auf Spielen.'); }
   }
   private frame() {
@@ -62,21 +72,25 @@ export class Game {
     if (this.running && this.input.locked) {
       this.camera.update(dt);
       this.accumulator += dt;
-      while (this.accumulator >= movement.fixedStep) { this.controller.update(movement.fixedStep); this.accumulator -= movement.fixedStep; }
+      while (this.accumulator >= movement.fixedStep) { if (!this.player.dead) this.controller.update(movement.fixedStep); this.accumulator -= movement.fixedStep; }
+      this.combat.update(dt);
+      if (this.input.take('mission')) this.showCombat = !this.showCombat;
       this.player.animate(dt); this.controller.grapple.render(); this.world.chunks.update(dt, this.player.position); this.missions.update(dt, this.player);
       this.uiTimer += dt;
       if (this.uiTimer > 0.1) {
         this.hud.update(this.player, this.engine.getFps(), this.world.chunks.activeCount);
+        this.hud.updateCombat(this.combat);
         const target = this.controller.grapple.target(); this.hud.element('reticle').classList.toggle('valid', !!target);
         this.hud.element('target-label').textContent = target ? `F · ${Math.round(target.distance)} M` : '';
-        this.hud.element('mission-title').textContent = this.missions.objective?.title ?? 'Höhenroute geschafft';
-        this.hud.element('mission-detail').textContent = this.missions.objective?.description ?? 'Erkunde Cala Ventra frei. Neustart der Route im Pausenmenü.';
-        this.hud.element('mission-progress').style.width = `${this.missions.progress * 100}%`;
-        this.hud.element('mission-count').textContent = `${this.missions.count} · ${Math.floor(this.missions.time)} S`;
+        this.hud.element('mission-title').textContent = this.showCombat ? (this.combat.liberated ? 'Relais Orbis gesichert' : 'Operation Brandung') : (this.missions.objective?.title ?? 'Höhenroute geschafft');
+        this.hud.element('mission-detail').textContent = this.showCombat ? 'Schalte die Wachen aus und zerstöre die drei roten Treibstofftanks im Osten.' : (this.missions.objective?.description ?? 'Erkunde Cala Ventra frei. Neustart der Route im Pausenmenü.');
+        const progress = this.showCombat ? (this.combat.destroyed + this.combat.enemies.defeated) / 11 : this.missions.progress;
+        this.hud.element('mission-progress').style.width = `${progress * 100}%`;
+        this.hud.element('mission-count').textContent = this.showCombat ? `${this.combat.enemies.defeated}/8 WACHEN · ${this.combat.destroyed}/3 TANKS` : `${this.missions.count} · ${Math.floor(this.missions.time)} S`;
         this.uiTimer = 0;
       }
     }
     this.scene.render();
   }
-  dispose() { this.abort.abort(); this.input.dispose(); this.engine.stopRenderLoop(); this.scene.dispose(); this.assetManager.dispose(); this.engine.dispose(); }
+  dispose() { this.abort.abort(); this.input.dispose(); this.combat.dispose(); this.engine.stopRenderLoop(); this.scene.dispose(); this.assetManager.dispose(); this.engine.dispose(); }
 }
