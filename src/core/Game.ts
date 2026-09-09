@@ -48,6 +48,9 @@ export class Game {
     this.engine = new Engine(canvas, true, { stencil: true, preserveDrawingBuffer: false, powerPreference: 'high-performance' });
     this.engine.setHardwareScalingLevel(1.25);
     this.scene = new Scene(this.engine);
+    // Gameplay performs its own explicit raycasts; Babylon's implicit pointer-move
+    // picking would otherwise scan the scene throughout mouse-look.
+    this.scene.skipPointerMovePicking = true;
     this.input = new InputManager(canvas); this.assetManager = new AssetManager(this.scene);
     this.player = new Player(this.scene); this.world = new WorldManager(this.scene, this.assetManager);
     this.camera = new ThirdPersonCamera(this.scene, this.player, this.input);
@@ -101,7 +104,7 @@ export class Game {
     if (save) { this.player.position.copyFrom(validPosition ? Vector3.FromArray(save.player) : this.world.spawn); this.missions.restore(save.missions); this.combat.restore(save.combat); }
     else this.player.position.copyFrom(this.world.spawn);
     this.hud.setDifficulty(this.combat.difficulty);
-    if (save?.world) { this.exploration.restore(save.world.discoveredSettlementIds); this.atmosphere.elapsed = save.world.elapsed; }
+    if (save?.world) { this.exploration.restore(save.world.discoveredSettlementIds, save.world.surveyedMapCells); this.atmosphere.elapsed = save.world.elapsed; }
     this.world.chunks.update(1,this.player.position); this.atmosphere.update(0,this.player.position);
     this.player.state = 'FALLING'; this.player.velocity.setAll(0); this.camera.update(0, true);
     await this.scene.whenReadyAsync(); this.scene.render(); this.ready = true;
@@ -194,7 +197,7 @@ export class Game {
   private saveGame() {
     if (!this.ready || !this.scene.isReady() || this.player.dead) return;
     const position = this.player.position.asArray() as [number, number, number];
-    const save: GameSave = { version: 1, savedAt: Date.now(), player: position, missions: this.missions.saveState(), combat: this.combat.saveState(), world: {discoveredSettlementIds:[...this.exploration.discovered],elapsed:this.atmosphere?.elapsed??0} };
+    const save: GameSave = { version: 1, savedAt: Date.now(), player: position, missions: this.missions.saveState(), combat: this.combat.saveState(), world: {discoveredSettlementIds:[...this.exploration.discovered],surveyedMapCells:[...this.exploration.surveyed],elapsed:this.atmosphere?.elapsed??0} };
     storeGameSave(save);
   }
   private resetProgress() {

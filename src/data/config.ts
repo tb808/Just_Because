@@ -1,5 +1,7 @@
 export const movement = {
-  fixedStep: 1 / 120, maxFrameTime: 0.08,
+  // Babylon sweeps the full displacement, so 60 Hz remains tunnel-safe while
+  // halving ground rays and collision solves compared with the old 120 Hz loop.
+  fixedStep: 1 / 60, maxFrameTime: 0.08,
   walkSpeed: 7, sprintSpeed: 13, groundAcceleration: 12,
   airAcceleration: 5, gravity: 25, jumpSpeed: 11,
   bodyHeight: 1.8, radius: 0.38, coyoteTime: 0.12,

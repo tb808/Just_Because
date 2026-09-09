@@ -20,3 +20,27 @@
 /* Start screen save selection. */
 .menu-actions{display:grid;gap:10px;margin-top:28px}.menu-actions .primary{margin-top:0}.menu-actions .new-game{width:100%;padding:14px 18px;letter-spacing:.12em;font-weight:650}
 .menu .difficulty-note{display:block;margin:-9px 0 14px;color:#aebfba;font-size:10px;line-height:1.5}
+
+/* Persistent fog of war and base-controlled political regions. */
+.world-map .map-hidden-land{fill:#17343b;fill-opacity:.72}
+.world-map .map-land{fill:#7f9180}
+.world-map .map-height{pointer-events:none}
+.world-map .map-height-low{fill:#667b70;fill-opacity:.38}
+.world-map .map-height-mid{fill:#536a63;fill-opacity:.42}
+.world-map .map-height-high{fill:#91a29a;fill-opacity:.38}
+.world-map .map-territory{fill:#a94e49;fill-opacity:.73;transition:fill .55s ease}
+.world-map .map-territory.liberated{fill:#397fae;fill-opacity:.78}
+.world-map .map-territory-border{fill:none;stroke:#f2e7d0;stroke-opacity:.38;stroke-width:7;stroke-dasharray:16 11;pointer-events:none}
+.world-map .map-coast-outline{fill:none;stroke:#b6c5b6;stroke-opacity:.7;stroke-width:14;stroke-linejoin:round;pointer-events:none}
+.world-map .map-world-boundary{fill:none;stroke:#b8cac5;stroke-opacity:.32;stroke-width:7;stroke-dasharray:25 16;pointer-events:none}
+.world-map .map-base circle{fill:#d15f55;stroke:#f3c0ac;stroke-width:5}
+.world-map .map-base.liberated circle{fill:#4c9bd0;stroke:#cbeaff}
+.world-map .map-town.occupied rect,.world-map .map-town.occupied.discovered rect{fill:#cb6b62;stroke:#ffe0ce}
+.world-map .map-town.liberated rect,.world-map .map-town.liberated.discovered rect{fill:#68afe0;stroke:#dbf3ff}
+.world-map.open .map-town:not(.discovered) text{display:none}
+.map-territory-legend{display:none}
+.world-map.open .map-territory-legend{display:flex;position:absolute;left:16px;bottom:25px;gap:16px;padding:8px 10px;background:#102d35d9;border:1px solid #dbe6d12b;font:8px monospace;letter-spacing:.08em;color:#dce5db}
+.map-territory-legend span{display:flex;align-items:center;gap:6px}
+.map-territory-legend i{display:block;width:10px;height:10px;border-radius:2px}
+.map-territory-legend i.occupied{background:#cb6259}.map-territory-legend i.liberated{background:#519cd0}.map-territory-legend i.unknown{background:#17343b;border:1px solid #819995}
+@media(max-width:640px){.world-map.open .map-territory-legend{left:4px;bottom:4px;gap:7px;padding:5px;font-size:6px}.world-map .map-coast-outline{stroke-width:20px}}

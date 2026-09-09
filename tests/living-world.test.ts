@@ -80,7 +80,9 @@ test('merged buildings leave their intervening sidewalk traversable',async()=>{
 
 test('a moving car stops before a pedestrian and proceeds when the pedestrian moves behind it',async()=>{
   const f=await fixture(),car=f.scene.getTransformNodeByName('ambient-traffic-0')!,farAway=new Vector3(4000,0,4000);
+  const inactivePosition=car.position.clone();
   for(let i=0;i<5;i++) f.living.update(1,farAway);
+  assert.ok(car.position.equalsWithEpsilon(inactivePosition),'offscreen traffic must not consume simulation time');
   const forward=new Vector3(Math.sin(car.rotation.y),0,Math.cos(car.rotation.y));
   const player=car.position.add(forward.scale(15));player.y=terrainHeight(player.x,player.z)+1;
   for(let i=0;i<6;i++) f.living.update(1,player);

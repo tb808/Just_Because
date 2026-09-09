@@ -28,6 +28,7 @@ Die ausgegebene lokale Adresse öffnen und **Spielen** klicken. Bei einem defekt
 - **Fahrbare SUVs:** Steige mit E in geparkte oder fahrende SUVs ein. W/S steuern Gas, Bremse und Rückwärtsgang, A/D lenken; E steigt wieder aus und U setzt ein festgefahrenes Fahrzeug auf die letzte sichere Position.
 - **Überarbeitete Atmosphäre:** eigene Wasseranimation, Himmelsverlauf, ziehende Wolken, Küstenvögel, wechselndes Tageslicht und nahe Schatten. Die Einstellung Performance deaktiviert Schatten.
 - **Inselatlas, Journal und Reisen:** Die Minikarte folgt dem Spieler. Entdeckte Siedlungen werden für Schnellreise freigeschaltet; Reisen funktioniert am Boden ohne Alarm und ohne laufenden Zeitauftrag.
+- **Erkundungs- und Gebietskarte:** Bereiste Teile der Insel bleiben auf Atlas und Minikarte sichtbar, während unerforschtes Land verdeckt bleibt und nur Küste sowie Kartengrenze erkennbar sind. Die zehn Einflussgebiete des Direktorats erscheinen rot; nach Einnahme ihrer Basis wechseln Land und zugehörige Städte dauerhaft auf Blau.
 - **Lokaler Spielstand:** Position, Aufträge, Punkte, Gesundheit, Munition, besiegte Wachen, zerstörte Tanks, befreite Basen, entdeckte Orte und Tageslichtzeit werden automatisch gesichert. Ältere Spielstände bleiben lesbar. Rücktaste behält den Einsatzfortschritt; Einsatz neu starten setzt ihn zurück.
 
 ## Steuerung

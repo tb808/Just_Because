@@ -6,6 +6,7 @@ import { bases } from '../data/bases';
 import { settlements, worldLocations, worldRoads } from '../data/world';
 import { worldConfig } from '../data/config';
 import { terrainHeight } from '../world/Terrain';
+import { territories, territoryAt, territoryForSettlement } from '../data/territories';
 
 type AtlasView = 'world' | 'journal' | 'travel';
 const escape = (value: string) => value.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
@@ -28,12 +29,45 @@ function terrainPath(minimum: number) {
   return path;
 }
 
+const landPath = terrainPath(.5);
+
+/** Rasterised Voronoi regions follow the real coastline and stay cheap to render as SVG. */
+function buildTerritoryGeometry() {
+  const n = 96, step = worldConfig.size / n, half = worldConfig.size / 2;
+  const owners: Array<string | undefined> = [];
+  const paths = Object.fromEntries(territories.map(territory => [territory.baseId, ''])) as Record<string, string>;
+  for (let z = 0; z < n; z++) for (let x = 0; x < n; x++) {
+    const wx = -half + (x + .5) * step, wz = -half + (z + .5) * step;
+    owners[z * n + x] = terrainHeight(wx, wz) > .5 ? territoryAt(wx, wz).baseId : undefined;
+  }
+  for (let z = 0; z < n; z++) {
+    let start = 0, owner = owners[z * n];
+    for (let x = 1; x <= n; x++) {
+      const next = x < n ? owners[z * n + x] : undefined;
+      if (next === owner) continue;
+      if (owner) paths[owner] += `M${-half + start * step},${half - z * step}h${(x - start) * step}v${-step}h${-(x - start) * step}Z `;
+      start = x; owner = next;
+    }
+  }
+  let borders = '';
+  for (let z = 0; z < n; z++) for (let x = 0; x < n; x++) {
+    const owner = owners[z * n + x]; if (!owner) continue;
+    const right = x + 1 < n ? owners[z * n + x + 1] : undefined;
+    const below = z + 1 < n ? owners[(z + 1) * n + x] : undefined;
+    if (right && right !== owner) borders += `M${-half + (x + 1) * step},${half - z * step}v${-step}`;
+    if (below && below !== owner) borders += `M${-half + x * step},${half - (z + 1) * step}h${step}`;
+  }
+  return { paths, borders };
+}
+const territoryGeometry = buildTerritoryGeometry();
+
 export class WorldMap {
   private root: HTMLElement;
   private view: AtlasView = 'world';
   private selection = 0;
   private rows: Array<{ id: string; title: string; description: string; label: string; status: string }> = [];
   private listSignature = '';
+  private fogRevision = -1;
   private focus = false;
   open = false;
   onTrackMission: (id: string) => void = () => {};
@@ -48,18 +82,28 @@ export class WorldMap {
       <header class="map-header"><div><span class="eyebrow">DEIN WEG DURCH CALA VENTRA</span><h2>Der Inselatlas</h2></div><div><strong id="territory-count">0 / ${bases.length} FREI</strong><small id="atlas-discoveries"></small><button class="atlas-close" aria-label="Atlas schliessen">Schliessen · TAB</button></div></header>
       <div class="map-layout"><div class="map-canvas">
         <svg viewBox="${-half} ${-half} ${worldConfig.size} ${worldConfig.size}" role="img" aria-label="Topografische Inselkarte mit Orten, Strassen und aktuellem Ziel">
-          <defs><pattern id="sea-grid" width="256" height="256" patternUnits="userSpaceOnUse"><path d="M 256 0 H 0 V 256" fill="none" stroke="#b6d7d3" stroke-opacity=".08" stroke-width="3"/></pattern></defs>
+          <defs>
+            <pattern id="sea-grid" width="256" height="256" patternUnits="userSpaceOnUse"><path d="M 256 0 H 0 V 256" fill="none" stroke="#b6d7d3" stroke-opacity=".08" stroke-width="3"/></pattern>
+            <mask id="exploration-mask" maskUnits="userSpaceOnUse" x="${-half}" y="${-half}" width="${worldConfig.size}" height="${worldConfig.size}"><rect x="${-half}" y="${-half}" width="${worldConfig.size}" height="${worldConfig.size}" fill="#000"/><path id="map-fog-reveal" fill="#fff"/></mask>
+          </defs>
           <rect x="${-half}" y="${-half}" width="${worldConfig.size}" height="${worldConfig.size}" fill="url(#sea-grid)"/>
-          <path d="${terrainPath(.5)}" fill="#829d78" stroke="#d9cba0" stroke-width="18" stroke-linejoin="round"/>
-          <path d="${terrainPath(35)}" fill="#6c876e"/><path d="${terrainPath(75)}" fill="#566f66"/><path d="${terrainPath(120)}" fill="#93a59a"/>
-          <path d="${roads}" class="map-road"/>
-          ${worldLocations.map(point => `<g class="map-poi" transform="translate(${point.position[0]},${-point.position[1]})"><circle r="14"/><title>${escape(point.name)}</title></g>`).join('')}
-          ${settlements.map(place => `<g class="map-town" id="town-${place.id}" transform="translate(${place.center[0]},${-place.center[1]})"><rect x="-20" y="-20" width="40" height="40" rx="6"/><text x="31" y="-28">${escape(place.name)}</text></g>`).join('')}
-          ${bases.map((base,i) => `<g class="map-base" id="map-${base.id}" transform="translate(${base.flag[0]},${-base.flag[2]})"><circle r="27"/><text class="base-number" text-anchor="middle" y="11">${i+1}</text><title>${escape(base.name)}</title></g>`).join('')}
-          <g id="map-objective-marker"><circle r="48"/><path d="M 0 -25 L 20 0 L 0 25 L -20 0 Z"/></g>
+          <path d="${landPath}" class="map-hidden-land"/>
+          <g class="map-revealed" mask="url(#exploration-mask)">
+            <path d="${landPath}" class="map-land"/>
+            <path d="${terrainPath(35)}" class="map-height map-height-low"/><path d="${terrainPath(75)}" class="map-height map-height-mid"/><path d="${terrainPath(120)}" class="map-height map-height-high"/>
+            ${territories.map(territory => `<path id="territory-${territory.baseId}" class="map-territory occupied" d="${territoryGeometry.paths[territory.baseId]}"/>`).join('')}
+            <path d="${territoryGeometry.borders}" class="map-territory-border"/>
+            <path d="${roads}" class="map-road"/>
+            ${worldLocations.map(point => `<g class="map-poi" transform="translate(${point.position[0]},${-point.position[1]})"><circle r="14"/><title>${escape(point.name)}</title></g>`).join('')}
+            ${settlements.map(place => `<g class="map-town occupied" id="town-${place.id}" data-territory="${territoryForSettlement(place.id)?.baseId ?? ''}" transform="translate(${place.center[0]},${-place.center[1]})"><rect x="-20" y="-20" width="40" height="40" rx="6"/><text x="31" y="-28">${escape(place.name)}</text></g>`).join('')}
+            ${bases.map((base,i) => `<g class="map-base" id="map-${base.id}" transform="translate(${base.flag[0]},${-base.flag[2]})"><circle r="27"/><text class="base-number" text-anchor="middle" y="11">${i+1}</text><title>${escape(base.name)}</title></g>`).join('')}
+            <g id="map-objective-marker"><circle r="48"/><path d="M 0 -25 L 20 0 L 0 25 L -20 0 Z"/></g>
+          </g>
+          <path d="${landPath}" class="map-coast-outline"/>
+          <rect x="${-half + 10}" y="${-half + 10}" width="${worldConfig.size - 20}" height="${worldConfig.size - 20}" class="map-world-boundary"/>
           <path id="map-player" d="M 0 -28 L 20 22 L 0 12 L -20 22 Z" fill="#fff" stroke="#244d50" stroke-width="5"/>
           <text class="map-north" x="-1820" y="-1740">N ↑</text><g class="map-scale"><path d="M 1190 1780 V 1810 M 1190 1795 H 1690 M 1690 1780 V 1810"/><text x="1440" y="1750" text-anchor="middle">500 M</text></g>
-        </svg><div class="atlas-caption">${settlements.length} SIEDLUNGEN <i>·</i> ${worldLocations.length} AUSFLUGSZIELE <i>·</i> STRASSEN & HÖHENZÜGE</div>
+        </svg><div class="map-territory-legend"><span><i class="occupied"></i>BESETZT</span><span><i class="liberated"></i>BEFREIT</span><span><i class="unknown"></i>UNERKUNDET</span></div><div class="atlas-caption">${settlements.length} SIEDLUNGEN <i>·</i> ${worldLocations.length} AUSFLUGSZIELE <i>·</i> STRASSEN & HÖHENZÜGE</div>
       </div><section class="map-panel"><nav class="atlas-tabs" aria-label="Atlasbereich"><button data-view="world">Insel</button><button data-view="journal">Aufträge</button><button data-view="travel">Reisen</button></nav><p class="atlas-help" id="atlas-help"></p><div class="atlas-list" id="atlas-list" role="list"></div><div class="atlas-detail"><span class="eyebrow" id="atlas-status"></span><h3 id="map-destination"></h3><p id="map-objective"></p><button id="atlas-confirm" class="atlas-confirm">E · ZIEL VERFOLGEN</button></div><div class="map-controls"><kbd>↑ ↓</kbd><span>Eintrag wählen</span><kbd>← →</kbd><span>Bereich wechseln</span><kbd>E</kbd><span>Auswahl bestätigen</span></div></section></div>
       <footer><span id="map-mini-destination"></span><small>TAB · ATLAS &nbsp; M · AUFTRÄGE &nbsp; T · REISEN</small></footer>`;
     document.getElementById('app')!.append(this.root);
@@ -91,16 +135,28 @@ export class WorldMap {
     const target = !showCombat ? missions.mapTarget : undefined;
     const point = target?.position ?? base.flag, title = target?.title ?? base.name;
     const distance = Math.round(Math.hypot(player.position.x - point[0], player.position.z - point[2]));
-    this.text('territory-count', `${manager.liberatedCount} / ${manager.states.length} BASEN FREI`);
+    this.text('territory-count', `${manager.liberatedCount} / ${manager.states.length} GEBIETE BEFREIT`);
     this.text('atlas-discoveries', `${exploration.discovered.size} / ${settlements.length} ORTE · ${missions.completedCount} AUFTRÄGE ERLEDIGT`);
     this.text('map-mini-destination', `${title} · ${distance >= 1000 ? `${(distance/1000).toFixed(1)} km` : `${distance} m`}`);
     this.root.querySelector('#map-player')!.setAttribute('transform', `translate(${player.position.x},${-player.position.z}) rotate(${player.visual.rotation.y*180/Math.PI})`);
     this.root.querySelector('#map-objective-marker')!.setAttribute('transform', `translate(${point[0]},${-point[2]})`);
     this.root.querySelector('svg')!.setAttribute('viewBox', this.open ? `${-worldConfig.size/2} ${-worldConfig.size/2} ${worldConfig.size} ${worldConfig.size}` : `${player.position.x-420} ${-player.position.z-420} 840 840`);
-    for (const place of settlements) this.root.querySelector(`#town-${place.id}`)!.classList.toggle('discovered', exploration.discovered.has(place.id));
+    if (this.fogRevision !== exploration.revision) {
+      this.fogRevision = exploration.revision;
+      this.root.querySelector('#map-fog-reveal')!.setAttribute('d', exploration.visibilityPath());
+    }
+    for (const place of settlements) {
+      const marker = this.root.querySelector(`#town-${place.id}`)!;
+      const territory = territoryForSettlement(place.id);
+      const liberated = !!territory && manager.states.some(state => state.definition.id === territory.baseId && state.liberated);
+      marker.classList.toggle('discovered', exploration.discovered.has(place.id));
+      marker.classList.toggle('liberated', liberated); marker.classList.toggle('occupied', !liberated);
+    }
     for (const b of manager.states) {
       const marker = this.root.querySelector(`#map-${b.definition.id}`)!;
       marker.classList.toggle('liberated', b.liberated); marker.classList.toggle('selected', b === state && showCombat);
+      const region = this.root.querySelector(`#territory-${b.definition.id}`)!;
+      region.classList.toggle('liberated', b.liberated); region.classList.toggle('occupied', !b.liberated);
     }
     if (!this.open) return;
     const labels = {locked:'GESPERRT',available:'BEREIT',active:'VERFOLGT',complete:'ERLEDIGT'};
@@ -113,9 +169,12 @@ export class WorldMap {
         label:`${Math.round(Math.hypot(player.position.x-place.center[0],player.position.z-place.center[1]))} m entfernt`,status:exploration.discovered.has(place.id)?'ENTDECKT':'UNERKUNDET'}));
       this.text('atlas-help', 'Entdecke Orte zu Fuss oder aus der Luft. Danach reist du ausserhalb eines Alarms vom Boden direkt zu ihrem Marktplatz.');
     } else {
-      this.rows = manager.states.map(b => ({id:b.definition.id,title:b.definition.name,description:b.definition.description,
-        label:`${b.guards}/${b.definition.guards.length} Wachen · ${b.tanks}/${b.definition.tanks.length} Tanks`,status:b.liberated?'BEFREIT':'BESETZT'}));
-      this.text('atlas-help', 'Die Strassen verbinden alle Städte und Sehenswürdigkeiten. Befreite Basen bieten Bewohner und Nachschub.');
+      this.rows = manager.states.map(b => {
+        const territory = territories.find(region => region.baseId === b.definition.id);
+        return {id:b.definition.id,title:territory?.name ?? b.definition.name,description:`${b.definition.name} · ${b.definition.description}`,
+          label:`${b.guards}/${b.definition.guards.length} Wachen · ${b.tanks}/${b.definition.tanks.length} Tanks`,status:b.liberated?'BEFREIT':'BESETZT'};
+      });
+      this.text('atlas-help', 'Erkundete Gebiete werden sichtbar. Rot gehört dem Direktorat; mit der Basis werden das Land und seine Städte blau und frei.');
     }
     this.selection = Math.min(this.selection, Math.max(0,this.rows.length-1));
     const signature = JSON.stringify([this.view,this.selection,this.rows.map(r=>[r.id,r.status,r.label])]);

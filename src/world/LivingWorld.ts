@@ -254,11 +254,19 @@ export class LivingWorld {
     const angle=Math.atan2(direction.x,direction.z),difference=Math.atan2(Math.sin(angle-root.rotation.y),Math.cos(angle-root.rotation.y));root.rotation.y+=difference*(1-Math.exp(-7*dt));
   }
   private updateTraffic(dt: number, player: Vector3, residents: Resident[]) {
+    // Cars outside the visible simulation bubble neither render nor affect local
+    // traffic, so avoid route planning, collision queries and matrix updates for them.
+    for(const car of this.traffic) {
+      const active=car.vehicle.occupied||Vector3.DistanceSquared(car.root.position,player)<420**2;
+      if(active!==car.active) {car.root.setEnabled(active);car.vehicle.collider.setEnabled(active);car.active=active;}
+    }
+    const residentUsers:RoadUser[]=residents.map(npc=>({position:point(npc.root.position),radius:.65}));
     for(const car of this.traffic) {
       if(car.vehicle.occupied) {
         car.wasOccupied=true; car.active=true; car.root.setEnabled(true); car.vehicle.collider.setEnabled(true);
         continue;
       }
+      if(!car.active) continue;
       if(car.wasOccupied) {
         let nearest=0,distance=Number.POSITIVE_INFINITY;
         car.route.forEach((point,index)=>{const next=Vector3.DistanceSquared(point,car.root.position);if(next<distance){distance=next;nearest=index;}});
@@ -269,8 +277,8 @@ export class LivingWorld {
       const remaining=delta.length();
       if(remaining<.22) {car.next=(car.next+1)%car.route.length;continue;}
       delta.normalize();
-      const users: RoadUser[]=[{position:point(player),radius:.9},...residents.map(npc=>({position:point(npc.root.position),radius:.65}))];
-      for(const other of this.traffic) if(other!==car) users.push({position:point(other.root.position),radius:1.35,speed:other.speed});
+      const users: RoadUser[]=[{position:point(player),radius:.9},...residentUsers];
+      for(const other of this.traffic) if(other!==car&&other.active) users.push({position:point(other.root.position),radius:1.35,speed:other.speed});
       const nextDirection=car.route[(car.next+1)%car.route.length].subtract(target).normalize();
       const turn=Vector3.Dot(delta,nextDirection), cornerSpeed=turn<.8&&remaining<12?Math.max(1.6,car.cruise*Math.max(.25,turn)):car.cruise;
       let desired=car.waiting>0?0:trafficTargetSpeed(point(car.root.position),point(delta),car.speed,cornerSpeed,users);
@@ -281,8 +289,6 @@ export class LivingWorld {
       if(!this.blocked(car.root.position,proposed,1.1)) car.root.position.copyFrom(proposed); else car.speed=0;
       car.root.position.y=roadSurfaceHeight(car.root.position.x,car.root.position.z)+.2;
       this.face(car.root,delta,dt*1.5);
-      const active=Vector3.DistanceSquared(car.root.position,player)<420**2;
-      if(active!==car.active) {car.root.setEnabled(active);car.vehicle.collider.setEnabled(active);car.active=active;}
       const c=Math.cos(car.root.rotation.y),s=Math.sin(car.root.rotation.y),offset=car.vehicle.centerOffset;
       car.vehicle.collider.position.set(car.root.position.x+offset.x*c+offset.z*s,car.root.position.y+offset.y,car.root.position.z-offset.x*s+offset.z*c);
       car.vehicle.collider.rotation.y=car.root.rotation.y;car.vehicle.collider.computeWorldMatrix(true);

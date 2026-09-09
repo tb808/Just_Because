@@ -36,9 +36,10 @@ test('expanded campaign and discovered towns are optional, validated save fields
     ...valid, missions: { index: 4, elapsed: 90, trackedId: 'supply-estela', records: {
       heights: { step: 4, elapsed: 90, hold: 0, complete: true },
       'supply-estela': { step: 1, elapsed: 22, hold: 0, complete: false },
-    } }, world: { discoveredSettlementIds: ['ventosa', 'estela'], elapsed: 430 },
+    } }, world: { discoveredSettlementIds: ['ventosa', 'estela'], surveyedMapCells: ['21:19','22:19'], elapsed: 430 },
   };
   assert.equal(isGameSave(campaign), true);
+  assert.equal(isGameSave({ ...campaign, world: { ...campaign.world, surveyedMapCells: [3] } }), false);
   assert.equal(isGameSave(valid), true, 'legacy saves remain supported');
   assert.equal(isGameSave({ ...campaign, missions: { ...campaign.missions, records: [] } }), false);
   assert.equal(isGameSave({ ...campaign, missions: { ...campaign.missions, records: { broken: { step: -1, elapsed: 1, hold: 0, complete: false } } } }), false);

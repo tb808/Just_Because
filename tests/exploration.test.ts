@@ -21,9 +21,21 @@ test('discovery unlocks actual destinations once and rejects unvisited or unsafe
 });
 
 test('discovery restoration filters removed places and restart clears unlocks',()=>{
-  const exploration=new Exploration(); exploration.restore(['sanremo','removed-town']);
+  const exploration=new Exploration(); exploration.restore(['sanremo','removed-town'], ['1:1','bad-cell','999:999']);
   assert.deepEqual([...exploration.discovered],['ventosa','sanremo']);
+  assert.deepEqual([...exploration.surveyed].filter(cell=>cell!=='21:19'),['1:1']);
   exploration.reset(); assert.deepEqual([...exploration.discovered],['ventosa']);
+});
+
+test('travel permanently surveys map cells while distant land remains hidden',()=>{
+  const exploration=new Exploration(), start=settlements[0], distant=settlements.at(-1)!;
+  assert.equal(exploration.isSurveyed(start.center[0],start.center[1]),true);
+  assert.equal(exploration.isSurveyed(distant.center[0],distant.center[1]),false);
+  const revision=exploration.revision;
+  exploration.update(new Vector3(distant.center[0],distant.elevation+1,distant.center[1]));
+  assert.ok(exploration.revision>revision);
+  assert.equal(exploration.isSurveyed(distant.center[0],distant.center[1]),true);
+  assert.match(exploration.visibilityPath(),/[aA]250,250/);
 });
 
 test('new island saves beyond the old reset boundary load while corrupted or buried positions do not',()=>{

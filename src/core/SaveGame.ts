@@ -27,7 +27,7 @@ export interface GameSave {
   player: [number, number, number];
   missions: MissionSaveState;
   combat: CombatSaveState;
-  world?: { discoveredSettlementIds: string[]; elapsed: number };
+  world?: { discoveredSettlementIds: string[]; surveyedMapCells?: string[]; elapsed: number };
 }
 
 type StorageLike = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
@@ -51,7 +51,9 @@ export function isGameSave(value: unknown): value is GameSave {
     && (missions.trackedId === undefined || typeof missions.trackedId === 'string')
     && (missions.records === undefined || !!missions.records && typeof missions.records === 'object' && !Array.isArray(missions.records)
       && Object.values(missions.records).every(missionRecordValid))
-    && (save.world === undefined || !!save.world && stringArray(save.world.discoveredSettlementIds) && finite(save.world.elapsed) && save.world.elapsed >= 0)
+    && (save.world === undefined || !!save.world && stringArray(save.world.discoveredSettlementIds)
+      && (save.world.surveyedMapCells === undefined || stringArray(save.world.surveyedMapCells))
+      && finite(save.world.elapsed) && save.world.elapsed >= 0)
     && !!combat && finite(combat.score) && finite(combat.health) && finite(combat.selectedBase)
     && (combat.difficulty === undefined || isDifficulty(combat.difficulty))
     && stringArray(combat.liberatedBaseIds) && stringArray(combat.defeatedEnemyIds) && stringArray(combat.destroyedTankIds)

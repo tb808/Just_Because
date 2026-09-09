@@ -141,12 +141,16 @@ export class Atmosphere {
     }
     this.casterTimer -= dt;
     if (this.casterTimer <= 0 && this.quality < 1.6) {
-      this.casterTimer = 1;
+      this.casterTimer = 1.5;
       // Nearby visible geometry only: terrain, sky, water and hidden collision proxies never cast.
-      this.shadows.getShadowMap()!.renderList = this.scene.meshes.filter(mesh => mesh.isEnabled() && mesh.isVisible && mesh.visibility > 0
-        && mesh !== this.sky && !/terrain|sea|checkpoint|cloud|cumulus|collider|hitbox/i.test(mesh.name)
-        && Math.hypot(mesh.getBoundingInfo().boundingBox.centerWorld.x-player.x,mesh.getBoundingInfo().boundingBox.centerWorld.z-player.z) < 140
-        && mesh.getBoundingInfo().boundingSphere.radiusWorld > .3).slice(0, 200);
+      const casters=[] as typeof this.scene.meshes;
+      for(const mesh of this.scene.meshes) {
+        if(!mesh.isEnabled()||!mesh.isVisible||mesh.visibility<=0||mesh===this.sky||/terrain|sea|checkpoint|cloud|cumulus|collider|hitbox/i.test(mesh.name)) continue;
+        const bounds=mesh.getBoundingInfo(),center=bounds.boundingBox.centerWorld,dx=center.x-player.x,dz=center.z-player.z;
+        if(dx*dx+dz*dz>=110**2||bounds.boundingSphere.radiusWorld<=.3) continue;
+        casters.push(mesh);if(casters.length>=90)break;
+      }
+      this.shadows.getShadowMap()!.renderList=casters;
     }
   }
   dispose() { this.shadows.dispose(); }
