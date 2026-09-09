@@ -22,9 +22,9 @@ test('non-rendered world construction batches geometry and preserves navigable s
   const world=new WorldManager(scene,assetStub);
   try {
     await world.create();
-    assert.equal(world.flags.size,6);assert.equal(world.supplies.length,6);assert.equal(world.destructibles.length,17);
+    assert.equal(world.flags.size,10);assert.equal(world.supplies.length,10);assert.equal(world.destructibles.length,29);
     const batches=scene.meshes.filter(m=>m.name.startsWith('district:'));
-    assert.ok(batches.length>100&&batches.length<3200,'district batches must stay bounded');
+    assert.ok(batches.length>100&&batches.length<4800,`district batches must stay bounded: ${batches.length}`);
     assert.ok(batches.reduce((count,m)=>count+m.getTotalVertices(),0)>500000,'expanded districts need actual detailed geometry');
     const bounds=batches.flatMap(mesh=>mesh.metadata.navigationObstacles as Bounds[]);
     assert.ok(bounds.length>1500,'collision metadata must preserve individual shapes');

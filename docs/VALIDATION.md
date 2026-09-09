@@ -1,5 +1,13 @@
 # Prüfstand
 
+## 9. September 2026 – vier neue Städte und vier Basen
+
+83 automatisierte Codetests bestanden; TypeScript und Vite-Produktionsbuild erfolgreich. Kein Browser, Screenshot oder visueller Test ausgeführt. Die bekannte Grössenwarnung des Babylon-Bundles bleibt bestehen.
+
+Das Terrain umfasst jetzt 5.120 × 5.120 Meter bei unveränderter Rasterweite. Vier zusätzliche Landregionen tragen Rocca Alta, Ferravalle, Cala Serena und Solara sowie die Basen Bastione, Fonderia, Scogliera und Meridiano. Insgesamt zwölf Städte, zehn Basen, 369 Wohngebäude, 52 Missionen mit 172 Zielen und 26 Verkehrsfahrzeuge. Die vier neuen Baustile entstehen als lokale, gebündelte Geometrie in `FrontierArchitecture.ts`.
+
+Numerisch geprüft: alle zwölf Stadtzentren und vier neuen Basistore im selben Strassengraphen; Strassendreiecke samt Innenpunkten liegen 24 cm über den tatsächlichen Geländedreiecken; trockene Zufahrten ohne steile Höhensprünge; freie Gehwege, Missionsziele und Wachenspawns. Die komplette Kampagne lässt sich ohne blockierende Voraussetzungen abschliessen. Bewohner-, Verkehrs-, Bewegungs-, Kampf- und Speicherprüfungen bestehen. Darstellung und gefühlte Laufzeitperformance werden vom Nutzer geprüft.
+
 ## 9. September 2026 – Strassennetz und Geländeanschluss
 
 81 Codetests bestanden; TypeScript und Produktionsbuild erfolgreich. Kein Browser, Screenshot oder visueller Test ausgeführt.

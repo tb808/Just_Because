@@ -11,9 +11,10 @@ const distanceToSegment = ([px,pz]:GroundPoint,[ax,az]:GroundPoint,[bx,bz]:Groun
   return Math.hypot(px-(ax+dx*t),pz-(az+dz*t));
 };
 
-test('expanded island contains eight populated towns, six bases and a connected dry road network',()=>{
-  assert.equal(worldConfig.size,4096);assert.equal(settlements.length,8);assert.equal(bases.length,6);
-  assert.ok(settlements.reduce((sum,town)=>sum+town.homes.length,0)>=220,'towns need substantial authored building density');
+test('expanded island contains twelve populated towns, ten bases and a connected dry road network',()=>{
+  assert.equal(worldConfig.size,5120);assert.equal(settlements.length,12);assert.equal(bases.length,10);
+  assert.equal(new Set(settlements.slice(8).map(t=>t.architecture)).size,4);
+  assert.ok(settlements.reduce((sum,town)=>sum+town.homes.length,0)>=330,'towns need substantial authored building density');
   assert.ok(worldLocations.length>=16);
   for(const settlement of settlements) {
     assert.equal(terrainHeight(...settlement.center),settlement.elevation);

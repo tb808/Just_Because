@@ -22,6 +22,17 @@ export class CharacterAnimator {
     for (const node of targets) if (node instanceof TransformNode) {
       this.restPose.push({ node, position: node.position.clone(), rotation: node.rotation.clone(), quaternion: node.rotationQuaternion?.clone() ?? null, scaling: node.scaling.clone() });
     }
+    const idle = this.clips.get('idle'), staticPose = this.clips.get('static');
+    if (idle && staticPose) {
+      const groundedIdle = new AnimationGroup('grounded:idle', scene);
+      for (const target of idle.targetedAnimations) groundedIdle.addTargetedAnimation(target.animation, target.target);
+      for (const target of staticPose.targetedAnimations) {
+        if (!/root|hip|leg|foot/i.test(target.target.name)) continue;
+        const duplicate = idle.targetedAnimations.some(current => current.target === target.target && current.animation.targetProperty === target.animation.targetProperty);
+        if (!duplicate) groundedIdle.addTargetedAnimation(target.animation, target.target);
+      }
+      this.clips.set('idle', groundedIdle);
+    }
     for (const name of ['holding-both', 'holding-both-shoot', 'interact-right']) {
       const original = this.clips.get(name); if (!original) continue;
       const upper = new AnimationGroup(`upper:${name}`, scene);

@@ -19,9 +19,14 @@ export const captureDuration = 6;
 export const captureRadius = 12;
 
 const frontierBases = [
+  // Existing entries keep their order so saved liberation progress remains valid.
   {id:'nordwacht',name:'Festung Nordwacht',description:'Das nördliche Küstenfort schützt die schwere Funkanlage des Direktorats.',x:-950,z:980,y:46},
   {id:'levante',name:'Depot Levante',description:'Der Verkehrsknoten im Osten versorgt die Besatzung auf der ganzen Insel.',x:1100,z:-300,y:22},
   {id:'cima',name:'Radar Cima',description:'Die Radarbasis kontrolliert die nördlichen Bergpässe und den Luftraum.',x:900,z:1000,y:54},
+  {id:'bastione',name:'Festung Bastione',description:'Befreie den Gebirgsposten an der Versorgungsroute nach Rocca Alta.',x:-1250,z:1520,y:28},
+  {id:'fonderia',name:'Depot Fonderia',description:'Sichere das beschlagnahmte Materiallager der Werkstätten von Ferravalle.',x:1850,z:600,y:20},
+  {id:'scogliera',name:'Station Scogliera',description:'Öffne die westliche Küstenroute für die Bewohner von Cala Serena.',x:-1850,z:-1100,y:12},
+  {id:'meridiano',name:'Relais Meridiano',description:'Schalte die Störsender südlich von Solara aus und befreie den Funkhof.',x:1120,z:-1570,y:16},
 ];
 for(const base of frontierBases) bases.push({
   id:base.id,name:base.name,description:base.description,center:[base.x,base.y+.2,base.z],flag:[base.x-25,base.y+.3,base.z+6],

@@ -59,7 +59,7 @@ export class WorldMap {
           <g id="map-objective-marker"><circle r="48"/><path d="M 0 -25 L 20 0 L 0 25 L -20 0 Z"/></g>
           <path id="map-player" d="M 0 -28 L 20 22 L 0 12 L -20 22 Z" fill="#fff" stroke="#244d50" stroke-width="5"/>
           <text class="map-north" x="-1820" y="-1740">N ↑</text><g class="map-scale"><path d="M 1190 1780 V 1810 M 1190 1795 H 1690 M 1690 1780 V 1810"/><text x="1440" y="1750" text-anchor="middle">500 M</text></g>
-        </svg><div class="atlas-caption">8 SIEDLUNGEN <i>·</i> 16 AUSFLUGSZIELE <i>·</i> STRASSEN & HÖHENZÜGE</div>
+        </svg><div class="atlas-caption">${settlements.length} SIEDLUNGEN <i>·</i> ${worldLocations.length} AUSFLUGSZIELE <i>·</i> STRASSEN & HÖHENZÜGE</div>
       </div><section class="map-panel"><nav class="atlas-tabs" aria-label="Atlasbereich"><button data-view="world">Insel</button><button data-view="journal">Aufträge</button><button data-view="travel">Reisen</button></nav><p class="atlas-help" id="atlas-help"></p><div class="atlas-list" id="atlas-list" role="list"></div><div class="atlas-detail"><span class="eyebrow" id="atlas-status"></span><h3 id="map-destination"></h3><p id="map-objective"></p><button id="atlas-confirm" class="atlas-confirm">E · ZIEL VERFOLGEN</button></div><div class="map-controls"><kbd>↑ ↓</kbd><span>Eintrag wählen</span><kbd>← →</kbd><span>Bereich wechseln</span><kbd>E</kbd><span>Auswahl bestätigen</span></div></section></div>
       <footer><span id="map-mini-destination"></span><small>TAB · ATLAS &nbsp; M · AUFTRÄGE &nbsp; T · REISEN</small></footer>`;
     document.getElementById('app')!.append(this.root);

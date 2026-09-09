@@ -52,6 +52,7 @@ export const traversalRoute: TraversalObjective[] = [
 ];
 
 const civicStories = [
+  // One authored story per settlement; the original indices are retained.
   { title: 'Die erste freie Sendung', item: 'Medikamentenkiste', contact: 'Apothekerin Mara', recipient: 1, detail: 'Estela wartet seit Tagen auf Verbandszeug. Mara hat am Markt von Ventosa eine Kiste für dich vorbereitet.' },
   { title: 'Werkzeuge für die Ernte', item: 'Werkzeugpaket', contact: 'Mechaniker Ivo', recipient: 6, detail: 'Die Ölpresse in Oliveto steht still. Ivos Ersatzteile müssen durch das westliche Hügelland.' },
   { title: 'Frühmarkt in Ventosa', item: 'Orangenlieferung', contact: 'Händlerin Ada', recipient: 0, detail: 'Auroras Obstbauern versorgen den Küstenmarkt. Übernimm die erste Lieferung nach Ventosa.' },
@@ -60,6 +61,10 @@ const civicStories = [
   { title: 'Nachrichten aus den Bergen', item: 'Postsack', contact: 'Postbotin Alma', recipient: 1, detail: 'Nach Wochen der Sperren haben sich in Monteluce Briefe angesammelt. Bringe sie zum Markt von Estela.' },
   { title: 'Öl für den Hafen', item: 'Olivenöl-Kiste', contact: 'Bauer Renzo', recipient: 7, detail: 'Die Kantinen von Porto Novo brauchen Nachschub. Renzo wartet mit den Vorräten auf dem Dorfplatz.' },
   { title: 'Fisch für Aurora', item: 'Kühlbox', contact: 'Fischerin Noa', recipient: 2, detail: 'Noa möchte die südlichen Händler wieder beliefern. Nimm ihre Kühlbox über die westliche Küstenroute mit.' },
+  { title: 'Werkzeug über den Pass', item: 'Bergwerkzeug', contact: 'Zimmermann Neri', recipient: 9, detail: 'Rocca Alta liefert Spezialwerkzeug für den Wiederaufbau der Werkhallen von Ferravalle.' },
+  { title: 'Pumpen für Solara', item: 'Pumpenbauteile', contact: 'Schlosserin Vera', recipient: 11, detail: 'Ferravalles Werkstätten schicken neue Pumpen über die Ostküste zum Basar von Solara.' },
+  { title: 'Segeltuch und Seeluft', item: 'Segeltuchballen', contact: 'Segelmacherin Ines', recipient: 7, detail: 'Cala Serenas Segelmacher beliefern die Fischer von Porto Novo über die neue Westküstenstrasse.' },
+  { title: 'Eine warme Nacht', item: 'Wolldecken', contact: 'Weber Dario', recipient: 8, detail: 'Bringe die Decken aus Solaras Webereien zu den Bewohnern von Rocca Alta.' },
 ];
 const civicMissions: MissionDefinition[] = settlements.map((town, index) => {
   const story = civicStories[index], destination = settlements[story.recipient];
@@ -82,6 +87,10 @@ const neighborhoodStories = [
   { title: 'Wärme über den Dächern', job: 'Heizmaterial übergeben', detail: 'In Monteluce werden die Nächte kalt. Verteile Heizmaterial an den drei Nachbarschaftstreffpunkten.' },
   { title: 'Wasser für die Haine', job: 'Bewässerungsventil öffnen', detail: 'Olivetos Bewässerung muss abschnittsweise wieder geöffnet werden. Renzo hat drei Ventile markiert.' },
   { title: 'Sichere Heimkehr', job: 'Hafen-Sammelstelle versorgen', detail: 'Die Fischerfamilien von Porto Novo kehren zurück. Versorge ihre Sammelstellen und melde dich am Markt.' },
+  { title: 'Laternen am Berg', job: 'Wegbeleuchtung reparieren', detail: 'Sichere die nächtlichen Heimwege in drei Vierteln von Rocca Alta.' },
+  { title: 'Die Werkhallen erwachen', job: 'Werkstattanschluss freigeben', detail: 'Vera braucht Hilfe beim Neustart der Werkstätten in Ferravalle. Prüfe die drei Quartierverteiler.' },
+  { title: 'Schatten für den Sommer', job: 'Pergolenmaterial übergeben', detail: 'Die Nachbarschaften von Cala Serena bauen ihre schattigen Treffpunkte wieder auf.' },
+  { title: 'Wasser auf den Terrassen', job: 'Zisternenleitung öffnen', detail: 'Verbinde die drei Zisternenquartiere von Solara wieder mit der zentralen Wasserversorgung.' },
 ];
 const neighborhoodMissions: MissionDefinition[] = settlements.map((town, index) => {
   const story = neighborhoodStories[index];
@@ -172,12 +181,17 @@ export const missionDefinitions: readonly MissionDefinition[] = [
   },
   {
     id: 'free-island', title: 'Cala Ventra gehört uns', category: 'Inselreise', reward: 5000,
-    description: 'Alle sechs Stützpunkte sind frei. Verbinde die Dörfer mit einer letzten Botschaft und feiere am Ausgangspunkt.',
+    description: `Alle ${bases.length} Stützpunkte sind frei. Verbinde die Gemeinden mit einer letzten Botschaft und feiere am Ausgangspunkt.`,
     requires: liberationMissions.map(mission => mission.id),
     objectives: [
       interact('freedom-monteluce', 'Die Botschaft aus Monteluce', 'Hole die gemeinsame Erklärung der befreiten Gemeinden am Markt von Monteluce ab.', market(settlements[5]), 'Erklärung übernehmen'),
       interact('freedom-ventosa', 'Zurück in Ventosa', 'Bringe die Erklärung zu Mara auf den Markt von Ventosa.', market(settlements[0]), 'Erklärung übergeben'),
       visit('freedom-overlook', 'Ein neuer Morgen', 'Kehre zur Strasse unterhalb des Aussichtspunkts südlich von Ventosa zurück. Die Insel ist offen für deinen nächsten Sprung.', [-26, -300], 22),
     ],
+  },
+  {
+    id: 'frontier-postcards', title: 'Vier neue Horizonte', category: 'Inselreise', reward: 2400,
+    description: 'Entdecke die vier neuen Regionen: Berggassen, Werkhallen, Küstenvillen und die Terrassen von Solara.',
+    objectives: settlements.slice(8).map(town=>interact(`frontier-${town.id}`, `Inselpass · ${town.name}`, `${town.character}. Hole den Stempel am Markt.`, market(town), 'Reisestempel holen')),
   },
 ];

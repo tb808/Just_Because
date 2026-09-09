@@ -99,8 +99,8 @@ test('legacy four-checkpoint saves migrate without regranting rewards', () => {
   campaign.reset(); assert.equal(campaign.completedCount, 0); assert.equal(campaign.tracked.id, 'heights');
 });
 
-test('authored campaign covers eight settlements, six bases and all authored destinations with reachable land objectives', () => {
-  assert.equal(missionDefinitions.length, 39);
+test('authored campaign covers all settlements, bases and destinations with reachable land objectives', () => {
+  assert.equal(missionDefinitions.length, 52);
   assert.equal(new Set(missionDefinitions.map(definition => definition.id)).size, missionDefinitions.length);
   const objectives = missionDefinitions.flatMap(definition => definition.objectives);
   assert.ok(objectives.length > 100);
@@ -136,7 +136,7 @@ test('all authored missions can complete in order with no prerequisite deadlocks
     if (objective.kind === 'interact') assert.equal(campaign.interact(player), true);
     else campaign.update(objective.kind === 'hold' ? objective.holdSeconds! : 1, player, { liberatedBaseIds: bases.map(base => base.id) });
   }
-  assert.equal(campaign.complete, true); assert.equal(campaign.completedCount, 39);
+  assert.equal(campaign.complete, true); assert.equal(campaign.completedCount, missionDefinitions.length);
   assert.equal(reward, missionDefinitions.reduce((total, definition) => total + definition.reward, 0));
   const completed = campaign.saveState(); const restored = new MissionProgress(missionDefinitions);
   restored.onReward = () => assert.fail('Restoring a completed campaign must not grant another reward');

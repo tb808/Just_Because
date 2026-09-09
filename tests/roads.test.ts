@@ -8,6 +8,7 @@ import { VertexData } from '@babylonjs/core/Meshes/mesh.vertexData';
 import { createTerrain } from '../src/world/Terrain';
 import { appendStrip, roadLift, terrainSurfaceHeight, type RoadGeometry } from '../src/world/RoadSurface';
 import { settlements, worldRoads, type GroundPoint } from '../src/data/world';
+import { bases } from '../src/data/bases';
 
 test('asphalt triangle interiors and edges stay above terrain across the entire road network',()=>{
   let checked=0;
@@ -43,7 +44,7 @@ test('road height matches the actual collision terrain triangles, not just the s
   } finally {scene.dispose();engine.dispose();}
 });
 
-test('all eight towns are connected by continuous intersecting paved segments',()=>{
+test('all towns and the four new compound gates share a continuous paved network',()=>{
   const segments=Object.values(worldRoads).flatMap(points=>points.slice(1).map((b,i)=>({a:points[i],b})));
   const parent=segments.map((_,i)=>i),find=(i:number):number=>parent[i]===i?i:parent[i]=find(parent[i]);
   const distance=(p:GroundPoint,a:GroundPoint,b:GroundPoint)=>{const dx=b[0]-a[0],dz=b[1]-a[1],t=Math.max(0,Math.min(1,((p[0]-a[0])*dx+(p[1]-a[1])*dz)/(dx*dx+dz*dz||1)));return Math.hypot(p[0]-a[0]-dx*t,p[1]-a[1]-dz*t);};
@@ -54,5 +55,10 @@ test('all eight towns are connected by continuous intersecting paved segments',(
     if(intersect||Math.min(distance(a,c,d),distance(b,c,d),distance(c,a,b),distance(d,a,b))<.01)parent[find(j)]=find(i);
   }
   const components=settlements.map(town=>{const index=segments.findIndex(s=>distance(town.center,s.a,s.b)<.01);assert.ok(index>=0,`${town.name} has no road access`);return find(index);});
+  for(const base of bases.slice(6)) {
+    const gate:GroundPoint=[base.center[0]-38,base.center[2]];
+    const index=segments.findIndex(s=>distance(gate,s.a,s.b)<.01);
+    assert.ok(index>=0,`${base.name} gate has no paved access`);components.push(find(index));
+  }
   assert.equal(new Set(components).size,1,'the city roads must form a single connected network');
 });

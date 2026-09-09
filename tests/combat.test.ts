@@ -94,6 +94,19 @@ test('shooting arm layer excludes competing walking tracks and death stops locom
   scene.dispose(); engine.dispose();
 });
 
+test('idle combines breathing with a neutral lower-body pose', () => {
+  const engine = new NullEngine(), scene = new Scene(engine);
+  const root = new TransformNode('root', scene), leg = new TransformNode('leg-left', scene), torso = new TransformNode('torso', scene);
+  const restTrack = new Animation('rest-leg', 'rotation.x', 30, Animation.ANIMATIONTYPE_FLOAT, Animation.ANIMATIONLOOPMODE_CYCLE); restTrack.setKeys([{ frame: 0, value: 0 }, { frame: 30, value: 0 }]);
+  const breathe = new Animation('breathe', 'rotation.x', 30, Animation.ANIMATIONTYPE_FLOAT, Animation.ANIMATIONLOOPMODE_CYCLE); breathe.setKeys([{ frame: 0, value: 0 }, { frame: 30, value: 0.02 }]);
+  const staticPose = new AnimationGroup('actor:static', scene); staticPose.addTargetedAnimation(restTrack, root); staticPose.addTargetedAnimation(restTrack, leg);
+  const idle = new AnimationGroup('actor:idle', scene); idle.addTargetedAnimation(breathe, torso);
+  const animator = new CharacterAnimator([staticPose, idle], scene); animator.update(0.1, 'idle');
+  const grounded = scene.animationGroups.find(group => group.name === 'grounded:idle')!;
+  assert.ok(grounded.isPlaying); assert.deepEqual(new Set(grounded.targetedAnimations.map(target => target.target)), new Set([root, leg, torso]));
+  scene.dispose(); engine.dispose();
+});
+
 const effects = { explosion() {}, smoke() {}, muzzle() {}, trace() {}, impact() {} } as unknown as CombatEffects;
 const audio = { play() {} } as unknown as CombatAudio;
 test('health clamps damage and emits death exactly once', () => {
@@ -120,16 +133,25 @@ test('friendly-fire filtering and respawn immunity reject damage', () => {
   damage.register({ id: 'player', health: hp, position: Vector3.Zero(), faction: 'player', radius: 1, canDamage: () => false });
   assert.equal(damage.hit('player', 100, 'enemy-a'), false); assert.equal(hp.current, 90);
 });
+test('player-owned bullets and explosions cannot damage the player', () => {
+  const engine = new NullEngine(), scene = new Scene(engine), damage = new DamageSystem(), health = new HealthComponent(100);
+  damage.register({ id: 'player', health, position: Vector3.Zero(), faction: 'player', radius: 0.7 });
+  assert.equal(damage.hit('player', 100, 'player'), false);
+  const explosions = new ExplosionSystem(scene, damage, effects, audio, Vector3.Zero());
+  explosions.enqueue({ position: Vector3.Zero(), radius: 15, damage: 200, source: 'player' }); explosions.update();
+  assert.equal(health.current, 100); scene.dispose(); engine.dispose();
+});
 test('one tank detonation chains through three tanks and can reset', () => {
-  const engine = new NullEngine(), scene = new Scene(engine), damage = new DamageSystem();
+  const engine = new NullEngine(), scene = new Scene(engine), damage = new DamageSystem(), playerHealth = new HealthComponent(100);
   const explosions = new ExplosionSystem(scene, damage, effects, audio, Vector3.Zero()); let blasts = 0; explosions.onBlast = () => blasts++;
+  damage.register({ id: 'player', health: playerHealth, position: Vector3.Zero(), faction: 'player', radius: 0.7 });
   const tanks = [0, 9, 18].map((x, i) => {
     const root = new TransformNode(`tank-${i}`, scene); root.position.set(x, 0, 0);
     const collider = MeshBuilder.CreateBox(`tank-${i}-collider`, { size: 3 }, scene); collider.position.set(x, 3, 0); collider.checkCollisions = true; collider.metadata = { damageId: `fuel-${i}` }; collider.computeWorldMatrix(true);
     return new DestructibleComponent(scene, { id: `fuel-${i}`, root, collider }, damage, explosions);
   });
   damage.hit('fuel-0', 100, 'player'); explosions.update(); explosions.update();
-  assert.ok(tanks.every(t => t.health.dead)); assert.equal(blasts, 3);
+  assert.ok(tanks.every(t => t.health.dead)); assert.equal(blasts, 3); assert.equal(playerHealth.current, 100);
   explosions.update(); assert.equal(blasts, 3); tanks.forEach(t => t.reset()); assert.ok(tanks.every(t => !t.health.dead && t.object.collider.isEnabled()));
   scene.dispose(); engine.dispose();
 });
@@ -147,7 +169,7 @@ test('building cover reduces blast damage', () => {
   const health = new HealthComponent(100); damage.register({ id: 'player', health, position: new Vector3(0, 2, 8), faction: 'player', radius: 0.5 });
   const wall = MeshBuilder.CreateBox('cover', { width: 10, height: 10, depth: 1 }, scene); wall.position.z = 4; wall.checkCollisions = true; wall.computeWorldMatrix(true);
   const explosions = new ExplosionSystem(scene, damage, effects, audio, Vector3.Zero()); explosions.enqueue({ position: new Vector3(0, 2, 0), radius: 15, damage: 100, source: 'tank' }); explosions.update();
-  assert.ok(health.current > 85); assert.equal(radialDamage(20, 10, 100), 0); scene.dispose(); engine.dispose();
+  assert.ok(health.current > 85 && health.current < 100); assert.equal(radialDamage(20, 10, 100), 0); scene.dispose(); engine.dispose();
 });
 test('dead guards stop fighting and can be restored for a new operation', () => {
   const engine = new NullEngine(), scene = new Scene(engine), player = new Player(scene), damage = new DamageSystem();

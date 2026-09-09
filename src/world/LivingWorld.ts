@@ -58,7 +58,8 @@ export class LivingWorld {
       const [x,,z] = base.flag;
       for (let i = 0; i < 4; i++) await this.addResident(manager, [[x-6,z-6],[x+6,z-6],[x+6,z+6],[x-6,z+6]], i / 4, base.id);
     }
-    const roads = ['southernCoast','westCoast','southCoast','southeast','eastCoast','northCoast','northwest','mountainPass','eastCrossing','oliveHarbor'];
+    const roads = ['southernCoast','westCoast','southCoast','southeast','eastCoast','northCoast','northwest','mountainPass','eastCrossing','oliveHarbor','northernFrontier','foundryCoast','serenaCoast','sunCoast'];
+    const regionalRoadCount=roads.length;
     roads.push(...settlements.map(town => `${town.id}-avenue-0`));
     for (let i = 0; i < roads.length; i++) {
       const circuit = buildTrafficCircuit(worldRoads[roads[i]] ?? [], 2);
@@ -74,7 +75,7 @@ export class LivingWorld {
       trim.material = this.world.material(clothingColors[i % clothingColors.length]); trim.isPickable = false;
       model.root.setEnabled(false);
       vehicle.collider.setEnabled(false);
-      this.traffic.push({root:model.root,route,next,speed:0,cruise:i<10?10.5+(i%3):6.5,waiting:(i%4)*.65,initial:route[start].clone(),initialNext:next,active:false,vehicle,wasOccupied:false});
+      this.traffic.push({root:model.root,route,next,speed:0,cruise:i<regionalRoadCount?10.5+(i%3):6.5,waiting:(i%4)*.65,initial:route[start].clone(),initialNext:next,active:false,vehicle,wasOccupied:false});
     }
   }
 

@@ -12,6 +12,7 @@ export interface SettlementDefinition {
   population: number;
   character: string;
   color: string;
+  architecture?: 'alpine' | 'industrial' | 'riviera' | 'terraces';
 }
 
 const townSeeds = [
@@ -23,6 +24,10 @@ const townSeeds = [
   { id: 'monteluce', name: 'Monteluce', center: [350, 1020], market: [350, 1020], elevation: 68, radius: 156, population: 390, character: 'Bergstadt mit Steinplätzen, Terrassen und Aussichtsgärten', color: '#c8c5ae' },
   { id: 'oliveto', name: 'Oliveto', center: [-700, 650], market: [-700, 650], elevation: 38, radius: 155, population: 260, character: 'Landstadt zwischen Olivenhainen, Weinbergen und Mühlen', color: '#d7cb8e' },
   { id: 'porto-novo', name: 'Porto Novo', center: [-1150, 150], market: [-1150, 150], elevation: 9, radius: 158, population: 440, character: 'Fischerhäuser, Lagerhallen und eine geschäftige Hafenpromenade', color: '#b9cfcc' },
+  { id: 'rocca-alta', name: 'Rocca Alta', center: [-700,1730], market: [-700,1730], elevation: 48, radius: 164, population: 360, character: 'Schieferdächer, Holzbalkone und ein steinerner Bergfried zwischen Tannen', color: '#aaa791', architecture: 'alpine' },
+  { id: 'ferravalle', name: 'Ferravalle', center: [1500,1200], market: [1500,1200], elevation: 24, radius: 164, population: 680, character: 'Backsteinviertel, Werkhallen, Dachfenster und der alte Wasserturm', color: '#ae7657', architecture: 'industrial' },
+  { id: 'cala-serena', name: 'Cala Serena', center: [-1720,-600], market: [-1720,-600], elevation: 12, radius: 164, population: 410, character: 'Weisse Küstenvillen, türkisfarbene Läden und schattige Pergolen', color: '#eee3c7', architecture: 'riviera' },
+  { id: 'solara', name: 'Solara', center: [1580,-1150], market: [1580,-1150], elevation: 18, radius: 164, population: 450, character: 'Ockerfarbene Terrassenhäuser, Kuppeln und ein Basar am Karawanenturm', color: '#d3ad66', architecture: 'terraces' },
 ] as const;
 
 /** The same authored network drives roads, civilian travel, navigation and the map. */
@@ -43,6 +48,14 @@ export const worldRoads: Record<string, readonly GroundPoint[]> = {
   mountainPass: [[300,300],[425,445],[525,620],[480,805],[350,1020]],
   eastCrossing: [[300,300],[530,275],[770,245],[1000,220]],
   oliveHarbor: [[-1150,150],[-970,300],[-850,470],[-700,650]],
+  northernFrontier: [[-950,980],[-1130,1220],[-1050,1500],[-700,1500],[-700,1730],[-420,1730],[-180,1520],[60,1050]],
+  foundryCoast: [[900,1000],[1200,1020],[1500,1020],[1500,1200],[1770,1200],[1800,880],[1660,500],[1250,340]],
+  serenaCoast: [[-850,-700],[-1200,-850],[-1460,-850],[-1720,-850],[-1720,-600],[-1720,-360],[-1490,-280],[-1160,-240]],
+  sunCoast: [[1100,-300],[1390,-570],[1580,-850],[1580,-1150],[1580,-1420],[1290,-1460],[960,-1320],[820,-540]],
+  bastioneAccess: [[-1130,1220],[-1380,1340],[-1380,1520],[-1288,1520]],
+  fonderiaAccess: [[1800,880],[1720,710],[1720,600],[1812,600]],
+  scoglieraAccess: [[-1720,-850],[-1980,-940],[-1980,-1100],[-1888,-1100]],
+  meridianoAccess: [[1290,-1460],[970,-1480],[970,-1570],[1082,-1570]],
 };
 for (const town of townSeeds) {
   const [cx,cz] = town.center, edge = town.radius - 15;

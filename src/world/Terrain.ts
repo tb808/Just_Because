@@ -10,7 +10,9 @@ import { settlements, worldLocations, worldRoads } from '../data/world';
 const smooth = (a: number, b: number, x: number) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 function naturalHeight(x:number,z:number) {
   const radius=Math.hypot(x/1830,z/1740);
-  const coast=1-smooth(.77,1.02,radius);
+  // New peninsulas join the mainland; the original island and harbor bays stay authored.
+  const frontierRadius=Math.min(Math.hypot((x+700)/850,(z-1470)/850),Math.hypot((x-1440)/850,(z-880)/900),Math.hypot((x+1500)/790,(z+650)/850),Math.hypot((x-1330)/850,(z+1050)/980));
+  const coast=1-smooth(.77,1.02,Math.min(radius,frontierRadius));
   const massif=145*Math.exp(-((x-10)**2/155000+(z-670)**2/120000));
   const westRidge=48*Math.exp(-((x+630)**2/140000+(z-470)**2/350000));
   const eastRidge=72*Math.exp(-((x-950)**2/100000+(z-780)**2/240000));

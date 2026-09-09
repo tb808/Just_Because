@@ -14,7 +14,8 @@ export class DestructibleComponent {
   private shake = 0;
   constructor(scene: Scene, readonly object: WorldDestructible, damage: DamageSystem, explosions: ExplosionSystem) {
     const position = object.collider.position.clone();
-    damage.register({ id: object.id, health: this.health, position, faction: 'neutral', radius: 2.5 });
+    const damageTarget = { id: object.id, health: this.health, position, faction: 'neutral' as const, radius: 2.5, lastSource: object.id };
+    damage.register(damageTarget);
     this.wreck = MeshBuilder.CreateCylinder(`${object.id}-wreck`, { height: 0.65, diameter: 4.5, tessellation: 9 }, scene);
     this.wreck.position.copyFrom(object.root.position); this.wreck.position.y += 0.5; this.wreck.rotation.z = 0.09;
     const material = new StandardMaterial(`${object.id}-burnt`, scene); material.diffuseColor = Color3.FromHexString('#283638'); material.specularColor = Color3.Black(); this.wreck.material = material;
@@ -23,7 +24,7 @@ export class DestructibleComponent {
     this.health.onDeath = () => {
       this.setStreamHidden(true);
       object.root.setEnabled(false); object.collider.setEnabled(false); this.wreck.setEnabled(true);
-      explosions.enqueue({ position, radius: 18, damage: 240, source: object.id });
+      explosions.enqueue({ position, radius: 18, damage: 240, source: damageTarget.lastSource ?? object.id });
     };
   }
   update(dt: number) { this.shake = Math.max(0, this.shake - dt); if (!this.health.dead) this.object.root.rotation.z = Math.sin(this.shake * 85) * this.shake * 0.09; }
