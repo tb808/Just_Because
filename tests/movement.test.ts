@@ -95,6 +95,24 @@ test('camera retracts in front of an occluding wall', () => {
   wall.position.set(0, 3, -3); wall.checkCollisions = true; wall.computeWorldMatrix(true);
   f.camera.update(1 / 60, true); assert.ok(f.camera.camera.position.z > -2.5); f.dispose();
 });
+test('a retracted camera stays behind a fast airborne player', () => {
+  const f = fixture(); f.player.state = 'FALLING'; f.camera.yaw = 0; f.camera.pitch = 0; f.camera.update(0, true);
+  const oldTarget = f.player.position.add(new Vector3(0.8, 0.85, 0));
+  f.camera.camera.position.copyFrom(oldTarget.add(new Vector3(0, 0, -0.35)));
+  f.player.position.z -= 5; f.camera.update(1 / 60);
+  const target = f.player.position.add(new Vector3(0.8, 0.85, 0));
+  const relative = f.camera.camera.position.subtract(target);
+  assert.ok(relative.z < -0.2, `camera crossed in front of player: ${relative.z}`);
+  assert.ok(relative.asArray().every(Number.isFinite)); f.dispose();
+});
+test('camera repairs invalid orbit values instead of producing a broken view', () => {
+  const f = fixture(); f.camera.yaw = Number.POSITIVE_INFINITY; f.camera.pitch = Number.NaN;
+  f.camera.camera.position.copyFrom(f.player.position.add(new Vector3(0.8, 0.85, 0)));
+  f.camera.update(0);
+  assert.ok(Number.isFinite(f.camera.yaw)); assert.ok(Number.isFinite(f.camera.pitch));
+  assert.ok(f.camera.camera.position.asArray().every(Number.isFinite));
+  assert.ok(Vector3.Distance(f.camera.camera.position, f.player.position) > 1); f.dispose();
+});
 test('grapple acquires a surface, accelerates, and releases momentum', () => {
   const f = fixture(); const wall = MeshBuilder.CreateBox('anchor-wall', { width: 10, height: 25, depth: 1 }, f.scene);
   wall.position.set(0, 12, 40); wall.checkCollisions = true; wall.computeWorldMatrix(true);

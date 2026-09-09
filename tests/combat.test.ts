@@ -19,6 +19,7 @@ import { CharacterAnimator } from '../src/core/CharacterAnimator';
 import { CombatSystem } from '../src/combat/CombatSystem';
 import type { WorldManager } from '../src/world/WorldManager';
 import { bases, captureDuration } from '../src/data/bases';
+import { difficulties } from '../src/data/difficulty';
 
 test('complete operation awards once, respawns the player, and resets all objectives', () => {
   const engine = new NullEngine(), scene = new Scene(engine), player = new Player(scene);
@@ -154,5 +155,15 @@ test('dead guards stop fighting and can be restored for a new operation', () => 
   enemy.alert(player.position); damage.hit(enemy.id, 100, 'player'); const position = enemy.body.position.clone();
   enemy.update(2); assert.equal(enemy.body.metadata, null); assert.ok(enemy.body.position.equals(position));
   enemy.reset(); assert.equal(enemy.health.dead, false); assert.equal(enemy.body.metadata.damageId, enemy.id);
+  scene.dispose(); engine.dispose();
+});
+
+test('difficulty changes enemy health while preserving its current health ratio', () => {
+  const engine = new NullEngine(), scene = new Scene(engine), player = new Player(scene), damage = new DamageSystem();
+  const enemy = new Enemy('enemy-a', scene, new Vector3(0, 2, 10), player, damage, effects, audio, 'easy');
+  assert.equal(enemy.health.max, difficulties.easy.enemyHealth);
+  enemy.health.damage(enemy.health.max / 2); enemy.setDifficulty('hard');
+  assert.equal(enemy.health.max, difficulties.hard.enemyHealth); assert.equal(enemy.health.current, difficulties.hard.enemyHealth / 2);
+  enemy.health.damage(enemy.health.current); enemy.setDifficulty('medium'); assert.equal(enemy.health.current, 0);
   scene.dispose(); engine.dispose();
 });

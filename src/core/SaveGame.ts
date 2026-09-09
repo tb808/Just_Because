@@ -1,5 +1,6 @@
 import type { WeaponId } from '../data/weapons';
 import type { MissionSaveState } from '../missions/MissionProgress';
+import { isDifficulty, type Difficulty } from '../data/difficulty';
 
 export const saveKey = 'cala-ventra.save.v1';
 
@@ -17,6 +18,7 @@ export interface CombatSaveState {
   liberatedBaseIds: string[];
   defeatedEnemyIds: string[];
   destroyedTankIds: string[];
+  difficulty?: Difficulty;
 }
 
 export interface GameSave {
@@ -51,6 +53,7 @@ export function isGameSave(value: unknown): value is GameSave {
       && Object.values(missions.records).every(missionRecordValid))
     && (save.world === undefined || !!save.world && stringArray(save.world.discoveredSettlementIds) && finite(save.world.elapsed) && save.world.elapsed >= 0)
     && !!combat && finite(combat.score) && finite(combat.health) && finite(combat.selectedBase)
+    && (combat.difficulty === undefined || isDifficulty(combat.difficulty))
     && stringArray(combat.liberatedBaseIds) && stringArray(combat.defeatedEnemyIds) && stringArray(combat.destroyedTankIds)
     && !!weapons && (weapons.selected === 'rifle' || weapons.selected === 'launcher')
     && weaponValid(weapons.rifle) && weaponValid(weapons.launcher);

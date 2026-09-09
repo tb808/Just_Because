@@ -17,6 +17,7 @@ import { WeaponManager } from './WeaponManager';
 import { BaseManager } from '../world/BaseManager';
 import { LivingWorld } from '../world/LivingWorld';
 import type { CombatSaveState } from '../core/SaveGame';
+import type { Difficulty } from '../data/difficulty';
 
 /** Wires combat modules; damage, ballistics, AI and visual effects keep separate ownership. */
 export class CombatSystem {
@@ -46,6 +47,7 @@ export class CombatSystem {
   get heat() { const n = this.enemies.alertCount; return n === 0 ? 0 : n < 3 ? 1 : n < 6 ? 2 : 3; }
   get nearSupply() { return Vector3.Distance(this.player.position, this.world.supply) < 6 || (this.world.supplies??[]).some(s=>this.bases.states.some(b=>b.definition.id===s.baseId&&b.liberated)&&Vector3.Distance(this.player.position,Vector3.FromArray(s.position))<6); }
   get nearResident() { return !!this.living.nearby(this.player.position); }
+  get difficulty() { return this.enemies.difficulty; }
   constructor(private scene: Scene, private player: Player, private input: InputManager, camera: ThirdPersonCamera, private world: WorldManager) {
     this.living = new LivingWorld(world);
     this.bases.onLiberated = base => { this.score+=1000; this.world.setBaseLiberated(base.id,true); this.living.liberate(base.id); this.onMessage(`${base.name.toUpperCase()} BEFREIT · +1.000 Punkte · Nachschub verfügbar`); };
@@ -91,16 +93,17 @@ export class CombatSystem {
     this.living.update(dt,this.player.position);
   }
   revive() { this.health.reset(); this.player.revive(); this.weapons.reset(); this.immunity = 3; this.sinceDamage = 0; this.hurtFlash = 0; }
+  setDifficulty(difficulty: Difficulty) { this.enemies.setDifficulty(difficulty); }
   saveState(): CombatSaveState {
     return {
-      score: this.score, health: this.health.current, weapons: this.weapons.saveState(), selectedBase: this.bases.selected,
+      score: this.score, health: this.health.current, weapons: this.weapons.saveState(), selectedBase: this.bases.selected, difficulty: this.difficulty,
       liberatedBaseIds: this.bases.states.filter(base => base.liberated).map(base => base.definition.id),
       defeatedEnemyIds: this.enemies.enemies.filter(enemy => enemy.health.dead).map(enemy => enemy.id),
       destroyedTankIds: this.tanks.filter(tank => tank.health.dead).map(tank => tank.object.id),
     };
   }
   restore(state: CombatSaveState) {
-    this.reset(); this.score = Math.max(0, Math.floor(state.score));
+    this.setDifficulty(state.difficulty ?? 'medium'); this.reset(); this.score = Math.max(0, Math.floor(state.score));
     this.health.current = state.health > 0 ? Math.min(this.health.max, state.health) : this.health.max;
     this.weapons.restore(state.weapons);
     const defeated = new Set(state.defeatedEnemyIds), destroyed = new Set(state.destroyedTankIds);

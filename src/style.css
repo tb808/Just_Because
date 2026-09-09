@@ -19,3 +19,4 @@
 
 /* Start screen save selection. */
 .menu-actions{display:grid;gap:10px;margin-top:28px}.menu-actions .primary{margin-top:0}.menu-actions .new-game{width:100%;padding:14px 18px;letter-spacing:.12em;font-weight:650}
+.menu .difficulty-note{display:block;margin:-9px 0 14px;color:#aebfba;font-size:10px;line-height:1.5}

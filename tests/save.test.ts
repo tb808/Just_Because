@@ -46,4 +46,6 @@ test('expanded campaign and discovered towns are optional, validated save fields
   assert.equal(isGameSave({ ...campaign, missions: { ...campaign.missions, records: { broken: { step: 1, elapsed: 1, hold: 0, complete: 'yes' } } } }), false);
   assert.equal(isGameSave({ ...campaign, world: { discoveredSettlementIds: [3], elapsed: 30 } }), false);
   assert.equal(isGameSave({ ...campaign, world: { discoveredSettlementIds: [], elapsed: -1 } }), false);
+  assert.equal(isGameSave({ ...campaign, combat: { ...campaign.combat, difficulty: 'nightmare' } }), false);
+  assert.equal(isGameSave({ ...campaign, combat: { ...campaign.combat, difficulty: 'hard' } }), true);
 });

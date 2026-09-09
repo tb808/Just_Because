@@ -9,6 +9,7 @@ import { WorldManager } from '../src/world/WorldManager';
 import { StaticGeometry } from '../src/world/StaticGeometry';
 import { settlements } from '../src/data/world';
 import { missionDefinitions } from '../src/data/missions';
+import { bases } from '../src/data/bases';
 import type { AssetManager } from '../src/core/AssetManager';
 
 interface Bounds {minX:number;maxX:number;minZ:number;maxZ:number;minY:number;maxY:number}
@@ -55,6 +56,13 @@ test('non-rendered world construction batches geometry and preserves navigable s
       const hit=[...bounds,...directBounds].find(obstacle=>obstacle.maxY>y-.5&&obstacle.minY<y+.8&&x>obstacle.minX-.4&&x<obstacle.maxX+.4&&z>obstacle.minZ-.4&&z<obstacle.maxZ+.4);
       assert.ok(!hit,`${mission.id}/${objective.id} arrival intersects collision geometry: ${JSON.stringify(hit)}`);
     }
+    const blockedGuards:string[]=[];
+    for(const base of bases)for(const guard of base.guards) {
+      const y=base.center[1]+.98;
+      const hit=[...bounds,...directBounds].find(obstacle=>obstacle.maxY>y-.7&&obstacle.minY<y+.95&&guard.x>obstacle.minX-.5&&guard.x<obstacle.maxX+.5&&guard.z>obstacle.minZ-.5&&guard.z<obstacle.maxZ+.5);
+      if(hit) blockedGuards.push(`${guard.id}: ${JSON.stringify(hit)}`);
+    }
+    assert.deepEqual(blockedGuards,[],'guard spawns must not intersect collision geometry');
     const tank=world.destructibles[0];tank.root.metadata={streamHidden:true};tank.collider.metadata={...tank.collider.metadata,streamHidden:true};
     world.chunks.update(1,new Vector3(1900,0,1900));world.chunks.update(1,world.spawn);
     assert.equal(tank.root.isEnabled(),false);assert.equal(tank.collider.isEnabled(),false);

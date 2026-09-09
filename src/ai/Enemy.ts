@@ -10,6 +10,7 @@ import { AssetManager } from '../core/AssetManager';
 import { CharacterAnimator } from '../core/CharacterAnimator';
 import { assets, guardCharacterModels } from '../data/assets';
 import { enemyConfig } from '../data/enemies';
+import { difficulties, type Difficulty } from '../data/difficulty';
 import type { EnemyState } from '../data/contracts';
 import { HealthComponent } from '../systems/HealthComponent';
 import { DamageSystem } from '../combat/DamageSystem';
@@ -19,7 +20,7 @@ import { Player } from '../player/Player';
 import { chooseAvoidanceHeading, searchOffset } from './EnemyNavigation';
 
 export class Enemy {
-  readonly health = new HealthComponent(enemyConfig.maxHealth);
+  readonly health: HealthComponent;
   readonly body: Mesh;
   state: EnemyState = 'PATROL';
   private visual: TransformNode;
@@ -38,9 +39,14 @@ export class Enemy {
   private avoidanceDirection = Vector3.Zero();
   private avoidanceSide = 1;
   private personality = 0;
+  private stuckTime = 0;
+  private difficulty: Difficulty;
   get hasVisualContact() { return this.visible && !this.health.dead; }
   get knownTarget() { return this.lastSeen.clone(); }
-  constructor(readonly id: string, private scene: Scene, private spawn: Vector3, private player: Player, private damage: DamageSystem, private effects: CombatEffects, private audio: CombatAudio) {
+  get spawnPoint() { return this.spawn.clone(); }
+  constructor(readonly id: string, private scene: Scene, private spawn: Vector3, private player: Player, private damage: DamageSystem, private effects: CombatEffects, private audio: CombatAudio, difficulty: Difficulty = 'medium') {
+    this.difficulty = difficulty;
+    this.health = new HealthComponent(difficulties[difficulty].enemyHealth);
     this.body = MeshBuilder.CreateBox(`${id}-hitbox`, { width: 0.85, height: 1.9, depth: 0.85 }, scene);
     this.body.position.copyFrom(spawn); this.body.ellipsoid.set(0.4, 0.95, 0.4); this.body.visibility = 0; this.body.metadata = { damageId: id };
     this.visual = new TransformNode(`${id}-visual`, scene); this.visual.parent = this.body; this.visual.position.y = -0.95;
@@ -51,6 +57,11 @@ export class Enemy {
     this.health.onDamage = () => { this.hitTime = 0.25; this.alert(player.position); };
     this.health.onDeath = () => { this.animator?.die(); this.body.metadata = null; this.weapon?.setEnabled(false); };
   }
+  setDifficulty(difficulty: Difficulty) {
+    this.difficulty = difficulty;
+    this.health.setMaximum(difficulties[difficulty].enemyHealth);
+  }
+  relocateSpawn(position: Vector3) { this.spawn.copyFrom(position); this.body.position.copyFrom(position); this.body.computeWorldMatrix(true); }
   async load(manager: AssetManager) {
     const model = await manager.instantiate(guardCharacterModels[this.personality % guardCharacterModels.length], this.id); model.root.parent = this.visual;
     this.animator = new CharacterAnimator(model.entries?.animationGroups ?? [], this.scene);
@@ -108,6 +119,7 @@ export class Enemy {
       this.patrol += dt * 0.35; const target = this.spawn.add(new Vector3(Math.sin(this.patrol) * 4, 0, Math.cos(this.patrol) * 3));
       direction.copyFrom(target.subtract(this.body.position)); direction.y = 0; moving = direction.length() > 0.5;
     }
+    const wantsToMove=moving;
     if(moving&&direction.lengthSquared()>.01) {
       this.avoidanceTime-=dt;
       if(this.avoidanceTime<=0) {
@@ -128,20 +140,35 @@ export class Enemy {
       const target = Math.atan2(facing.x, facing.z);
       const angle = Math.atan2(Math.sin(target - this.visual.rotation.y), Math.cos(target - this.visual.rotation.y)); this.visual.rotation.y += angle * (1 - Math.exp(-9 * dt));
     }
+    const previousX=this.body.position.x,previousZ=this.body.position.z;
     this.body.computeWorldMatrix(true);
     this.body.moveWithCollisions(new Vector3(moving && !this.hitTime ? direction.x * enemyConfig.speed * dt : 0, -4 * dt, moving && !this.hitTime ? direction.z * enemyConfig.speed * dt : 0));
+    const moved=Math.hypot(this.body.position.x-previousX,this.body.position.z-previousZ);
+    if(wantsToMove&&!this.hitTime&&moved<enemyConfig.speed*dt*.08) this.stuckTime+=dt; else this.stuckTime=0;
+    if(this.stuckTime>=2.5) this.recoverFromStuck();
     this.visual.rotation.z = Math.sin(this.hitTime * 65) * this.hitTime * 0.4;
     if (this.weapon) this.weapon.position.z = 0.84 - this.shotTime * 0.35;
     this.animator?.update(dt, moving ? 'walk' : 'idle', this.shotTime > 0 ? 'holding-both-shoot' : 'holding-both');
   }
   private shoot(distance: number) {
+    const settings = difficulties[this.difficulty];
     const origin = this.body.position.add(new Vector3(0, 0.35, 0));
-    const aim = this.player.position.add(new Vector3((Math.random() - 0.5) * distance * 0.035, (Math.random() - 0.5) * distance * 0.02, 0));
+    const forward = this.player.position.subtract(origin).normalize();
+    const right = Vector3.Cross(Math.abs(forward.y) > 0.95 ? Vector3.Forward() : Vector3.Up(), forward).normalize();
+    const up = Vector3.Cross(forward, right).normalize();
+    const spread = distance * settings.enemyAimSpread;
+    const aim = this.player.position
+      .add(right.scale((Math.random() - 0.5) * spread))
+      .addInPlace(up.scale((Math.random() - 0.5) * spread * 0.6));
     const direction = aim.subtract(origin).normalize();
     const hit = this.scene.pickWithRay(new Ray(origin, direction, enemyConfig.viewDistance), m => m.checkCollisions || (m.metadata?.damageId === 'player'));
     const end = hit?.pickedPoint ?? origin.add(direction.scale(enemyConfig.viewDistance));
     this.effects.trace(origin, end, true); this.effects.muzzle(origin, direction); this.audio.play('shot', distance); this.shotTime = 0.18;
-    if (hit?.pickedMesh?.metadata?.damageId === 'player') this.damage.hit('player', enemyConfig.damage, this.id);
+    if (hit?.pickedMesh?.metadata?.damageId === 'player') this.damage.hit('player', settings.enemyDamage, this.id);
+  }
+  private recoverFromStuck() {
+    this.body.position.copyFrom(this.spawn);this.body.computeWorldMatrix(true);
+    this.state='PATROL';this.memory=this.searchTime=this.avoidanceTime=this.stuckTime=0;this.visible=false;this.avoidanceDirection.setAll(0);
   }
   restoreDefeated() {
     this.health.current = 0; this.animator?.die(); this.body.metadata = null; this.weapon?.setEnabled(false);
@@ -150,7 +177,7 @@ export class Enemy {
     this.health.reset(); this.animator?.reset(); this.body.position.copyFrom(this.spawn); this.body.metadata = { damageId: this.id }; this.weapon?.setEnabled(true);
     this.visual.rotation.setAll(0); this.visual.rotation.y = Math.PI; this.memory = 0; this.visible = false; this.state = 'PATROL'; this.fireTimer = 1;
     this.hitTime = this.shotTime = this.perception = this.patrol = 0;
-    this.searchTime=this.avoidanceTime=0;this.avoidanceDirection.setAll(0);
+    this.searchTime=this.avoidanceTime=this.stuckTime=0;this.avoidanceDirection.setAll(0);
     if (this.weapon) this.weapon.position.z = 0.84;
   }
 }

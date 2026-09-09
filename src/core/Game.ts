@@ -18,6 +18,7 @@ import { Atmosphere } from '../world/Atmosphere';
 import { Exploration, validSavedPosition } from '../world/Exploration';
 import { settlements } from '../data/world';
 import { baseCapturePrompt } from '../ui/BaseCapturePrompt';
+import { difficultyLabels } from '../data/difficulty';
 
 export class Game {
   private engine: Engine;
@@ -80,6 +81,7 @@ export class Game {
     this.hud.onVolume = value => this.combat.audio.volume = value;
     this.hud.onSensitivity = value => this.camera.sensitivity = value;
     this.hud.onQuality = value => { this.engine.setHardwareScalingLevel(value); this.atmosphere?.setQuality(value); };
+    this.hud.onDifficulty = value => { this.combat.setDifficulty(value); this.saveGame(); this.hud.notify(`Schwierigkeit: ${difficultyLabels[value]}`); };
     window.addEventListener('resize', () => this.engine.resize(), { signal: this.abort.signal });
     document.addEventListener('visibilitychange', () => { if (document.hidden) { this.saveGame(); this.input.dragMode = false; document.exitPointerLock(); this.input.onPause(); } }, { signal: this.abort.signal });
     window.addEventListener('pagehide', () => this.saveGame(), { signal: this.abort.signal });
@@ -92,6 +94,7 @@ export class Game {
     const validPosition = save && validSavedPosition(save.player);
     if (save) { this.player.position.copyFrom(validPosition ? Vector3.FromArray(save.player) : this.world.spawn); this.missions.restore(save.missions); this.combat.restore(save.combat); }
     else this.player.position.copyFrom(this.world.spawn);
+    this.hud.setDifficulty(this.combat.difficulty);
     if (save?.world) { this.exploration.restore(save.world.discoveredSettlementIds); this.atmosphere.elapsed = save.world.elapsed; }
     this.world.chunks.update(1,this.player.position); this.atmosphere.update(0,this.player.position);
     this.player.state = 'FALLING'; this.player.velocity.setAll(0); this.camera.update(0, true);

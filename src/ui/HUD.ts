@@ -2,6 +2,7 @@ import { Player } from '../player/Player';
 import { stateLabels } from '../player/PlayerState';
 import type { CombatSystem } from '../combat/CombatSystem';
 import { settlements, worldLocations } from '../data/world';
+import type { Difficulty } from '../data/difficulty';
 
 export class HUD {
   private root: HTMLElement;
@@ -20,6 +21,7 @@ export class HUD {
   onSensitivity: (value: number) => void = () => {};
   onQuality: (value: number) => void = () => {};
   onVolume: (value: number) => void = () => {};
+  onDifficulty: (value: Difficulty) => void = () => {};
   constructor() {
     this.root = document.getElementById('app')!;
     this.root.innerHTML = `
@@ -32,7 +34,7 @@ export class HUD {
         <span class="eyebrow">CALA VENTRA / OFFENE INSEL</span><h1 id="menu-title">Eine Insel.<br>Tausend Wege.</h1><p>Durch lebendige Altstädte. Über weite Täler.<br>Entdecke acht Orte und befreie die Insel.</p>
         <div class="menu-actions"><button class="primary" id="start" disabled>INSEL WIRD GELADEN … <span>↗</span></button><button class="secondary new-game" id="new-game" disabled>NEUES SPIEL</button></div><p id="loading" class="loading" role="status">Gelände vorbereiten …</p>
         <div class="controls"><div><kbd>W A S D</kbd><span>Bewegen</span></div><div><kbd>SHIFT</kbd><span>Sprinten</span></div><div><kbd>SPACE</kbd><span>Springen / Seil lösen</span></div><div><kbd>F / C / Q</kbd><span>Haken / Wingsuit / Schirm</span></div><div><kbd>MAUS</kbd><span>Kamera · Mausrad für Zoom</span></div><div><kbd>ESC</kbd><span>Pause</span></div></div>
-        <details><summary>Einstellungen & Credits</summary><label>Mausempfindlichkeit<input id="sensitivity" type="range" min="0.0007" max="0.005" step="0.0001" value="0.0022"></label><label>Renderqualität<select id="quality"><option value="1">Hoch</option><option value="1.25" selected>Ausgewogen</option><option value="1.6">Performance</option></select></label><p>3D-Modelle: Kenney · CC0<br>Eigene Welt und Traversal-Strukturen.<br>Movement-Prototyp: Kampf und Fahrzeuge folgen.</p><button id="reset" class="secondary">Zurück zum Startpunkt</button></details>
+        <details><summary>Einstellungen & Credits</summary><label>Schwierigkeit<select id="difficulty"><option value="easy">Leicht</option><option value="medium" selected>Mittel</option><option value="hard">Schwer</option></select></label><small class="difficulty-note">Beeinflusst Treffsicherheit, Schaden und Lebenspunkte der Gegner.</small><label>Mausempfindlichkeit<input id="sensitivity" type="range" min="0.0007" max="0.005" step="0.0001" value="0.0022"></label><label>Renderqualität<select id="quality"><option value="1">Hoch</option><option value="1.25" selected>Ausgewogen</option><option value="1.6">Performance</option></select></label><p>3D-Modelle: Kenney · CC0<br>Eigene Welt und Traversal-Strukturen.<br>Movement-Prototyp: Kampf und Fahrzeuge folgen.</p><button id="reset" class="secondary">Zurück zum Startpunkt</button></details>
       </section><div class="toast" id="toast" role="status"></div>`;
     this.root.insertAdjacentHTML('beforeend', `<div class="damage-vignette" id="damage-vignette"></div><div class="combat-top"><span id="alarm">KEIN ALARM</span><span id="score">0000 PUNKTE</span></div><div class="weapon-hud"><span id="weapon-name">STURMGEWEHR · VELA-7</span><div><strong id="ammo">30</strong><span id="reserve"> / 240</span></div><small id="reload-status">1 / 2 WAFFENWECHSEL · R NACHLADEN</small><div class="reload-track"><span id="reload-progress"></span></div></div>`);
     const controls = this.root.querySelector('.controls')!;
@@ -55,9 +57,11 @@ export class HUD {
     this.element('sensitivity').oninput = e => this.onSensitivity(Number((e.target as HTMLInputElement).value));
     this.element('quality').onchange = e => this.onQuality(Number((e.target as HTMLSelectElement).value));
     this.element('volume').oninput = e => this.onVolume(Number((e.target as HTMLInputElement).value));
+    this.element('difficulty').onchange = e => this.onDifficulty((e.target as HTMLSelectElement).value as Difficulty);
   }
   element(id: string) { return document.getElementById(id)!; }
   loading(done: number, total: number) { this.status.textContent = `Modelle laden · ${done} / ${total}`; }
+  setDifficulty(difficulty: Difficulty) { (this.element('difficulty') as HTMLSelectElement).value = difficulty; }
   ready(failures: number, hasSave: boolean) {
     this.start.disabled = !hasSave; this.newGame.disabled = false; this.newGame.hidden = false;
     this.start.innerHTML = hasSave ? 'FORTFAHREN <span>↗</span>' : 'KEIN SPIELSTAND';
