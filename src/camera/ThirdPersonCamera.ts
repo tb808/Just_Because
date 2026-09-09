@@ -38,11 +38,11 @@ export class ThirdPersonCamera {
     if (!Number.isFinite(this.distance)) this.distance = cameraConfig.distance;
     this.input.lookX = this.input.lookY = this.input.zoom = 0;
     const aiming = this.input.aiming;
-    const desired = aiming ? 3.2 : this.player.state === 'WINGSUIT' ? 11 : this.player.speed > 10 ? this.distance + 1.5 : this.distance;
+    const desired = aiming ? 3.2 : this.player.state === 'IN_VEHICLE' ? Math.max(9,this.distance+2) : this.player.state === 'WINGSUIT' ? 11 : this.player.speed > 10 ? this.distance + 1.5 : this.distance;
     this.currentDistance += (desired - this.currentDistance) * (1 - Math.exp(-5 * dt));
     const right = new Vector3(Math.cos(this.yaw), 0, -Math.sin(this.yaw));
     this.shoulder += ((aiming ? 0.7 : 0.8) - this.shoulder) * (1 - Math.exp(-10 * dt));
-    const anchor = this.player.position.add(new Vector3(0, 0.85, 0));
+    const anchor = this.player.position.add(new Vector3(0, this.player.state==='IN_VEHICLE'?1.15:.85, 0));
     // Follow player translation immediately. Only the camera's orbit should lag;
     // smoothing its world position can leave a retracted camera in front of a
     // fast airborne player and make it turn around for a frame.

@@ -1,5 +1,13 @@
 # Prüfstand
 
+## 9. September 2026 – Strassennetz und Geländeanschluss
+
+81 Codetests bestanden; TypeScript und Produktionsbuild erfolgreich. Kein Browser, Screenshot oder visueller Test ausgeführt.
+
+`RoadNetwork.ts` ersetzt die falsch orientierten bisherigen Strassenflächen durch dunklen Asphalt, Bankette, Mittellinien, Randlinien und gebündelte Leitpfosten. Kreuzungen erhalten geschlossene Anschlüsse; die Zebrastreifen liegen über dem Asphalt. Der alte waagerechte Brückensockel wurde entfernt, weil er die geneigte Fahrbahn schneiden konnte.
+
+`RoadSurface.ts` schneidet die Strassenumrisse direkt aus den tatsächlichen Geländedreiecken und hebt Asphalt um 24 cm an. Damit werden auch Dreiecksmitten und Kanten vom Gelände getragen; die glatte Höhenfunktion allein genügte hierfür nicht. Verkehr verwendet dieselbe Fahrbahnhöhe. Numerisch geprüft: nach oben gerichtete Flächen, Abstand sämtlicher Strassendreiecke zum Gelände, Vergleich mit Terrain-Kollisionsabfragen und zusammenhängende Erreichbarkeit aller acht Städte. Bestehende Spiellogik-, Fahrzeug- und Weltprüfungen bestehen ebenfalls. Vite meldet weiterhin lediglich die bekannte Grössenwarnung des Babylon-Bundles.
+
 ## 8. September 2026 – grosse Inselüberarbeitung, ausschliesslich Codeprüfung
 
 **65 automatisierte Tests bestanden, 0 Fehler.** Die TypeScript-Prüfung und der Vite-Produktionsbuild bestehen. Der vollständige aktuelle Build liegt in `dist/`. Vite meldet weiterhin die Grössenwarnung für das Babylon-Bundle (rund 2,99 MB unkomprimiert, 674 kB gzip); dies ist kein Buildfehler. Der Sandbox-Zugriff auf übergeordnete Verzeichnisse verhinderte zunächst das Lesen der Vite-Konfiguration durch esbuild. Der anschliessend freigegebene lokale Build lief erfolgreich durch.

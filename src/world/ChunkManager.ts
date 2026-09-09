@@ -23,7 +23,7 @@ export class ChunkManager {
       const dz=Math.max(chunk.z*worldConfig.chunkSize-position.z,0,position.z-(chunk.z+1)*worldConfig.chunkSize);
       const range=worldConfig.activeDistance+(chunk.active?80:0),active=dx*dx+dz*dz<range*range;
       if(active!==chunk.active) {chunk.active=active;this.count+=active?1:-1;}
-      for(const node of chunk.nodes)if(!node.isDisposed()) {const enabled=active && !node.metadata?.streamHidden;if(node.isEnabled()!==enabled)node.setEnabled(enabled);}
+      for(const node of chunk.nodes)if(!node.isDisposed()) {const enabled=(active||node.metadata?.alwaysActive) && !node.metadata?.streamHidden;if(node.isEnabled()!==enabled)node.setEnabled(enabled);}
     }
   }
 }

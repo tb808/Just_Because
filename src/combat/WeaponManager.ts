@@ -44,7 +44,7 @@ export class WeaponManager {
     if (this.input.take('reload') && this.current.reload()) this.audio.play('reload');
     this.shotTime = Math.max(0, this.shotTime - dt); this.recoil *= Math.exp(-22 * dt);
     const firePressed = this.input.take('fire');
-    const shooting = (firePressed || this.input.firing || this.input.down('fire')) && this.player.state !== 'WINGSUIT' && !this.player.dead;
+    const shooting = (firePressed || this.input.firing || this.input.down('fire')) && this.player.state !== 'WINGSUIT' && this.player.state !== 'IN_VEHICLE' && !this.player.dead;
     if (shooting && this.current.fire()) this.shoot();
     else if (shooting && this.current.ammo === 0 && this.current.reload()) this.audio.play('reload');
     this.player.combatPose = this.current.reloading ? 'reload' : this.shotTime > 0 ? 'shoot' : this.input.aiming ? 'aim' : 'none';
@@ -52,7 +52,7 @@ export class WeaponManager {
     const reload = Math.sin(this.current.reloadProgress * Math.PI);
     this.mount.position.set(0.3, 1.2 - reload * 0.25, 0.18 - this.recoil);
     this.mount.rotation.set(-this.camera.pitch - this.recoil * 2 + reload * 0.5, 0, -reload * 0.7);
-    this.mount.setEnabled(!this.player.dead && this.player.state !== 'WINGSUIT');
+    this.mount.setEnabled(!this.player.dead && this.player.state !== 'WINGSUIT' && this.player.state !== 'IN_VEHICLE');
   }
   private shoot() {
     const definition = this.current.definition;

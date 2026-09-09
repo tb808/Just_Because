@@ -84,7 +84,7 @@ export class CombatSystem {
       this.weapons.update(dt);
       if (this.sinceDamage > 7) this.health.heal(dt * 8);
       if (this.input.take('interact')) {
-        if(this.nearSupply) { this.weapons.reset(); this.health.heal(100); this.onMessage('Nachschub am SUV · Munition und Gesundheit aufgefüllt.'); }
+        if(this.nearSupply) this.resupply();
         else { const dialogue=this.living.talk(this.player.position); if(dialogue) this.onMessage(dialogue); }
       }
     }
@@ -92,6 +92,7 @@ export class CombatSystem {
     this.bases.update(dt,this.player.position,!this.player.dead,id=>this.damage.targets.get(id)?.health.dead??false);
     this.living.update(dt,this.player.position);
   }
+  resupply(message='Nachschub am SUV · Munition und Gesundheit aufgefüllt.') {this.weapons.reset();this.health.heal(100);this.onMessage(message);}
   revive() { this.health.reset(); this.player.revive(); this.weapons.reset(); this.immunity = 3; this.sinceDamage = 0; this.hurtFlash = 0; }
   setDifficulty(difficulty: Difficulty) { this.enemies.setDifficulty(difficulty); }
   saveState(): CombatSaveState {

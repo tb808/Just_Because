@@ -19,6 +19,7 @@ import { Exploration, validSavedPosition } from '../world/Exploration';
 import { settlements } from '../data/world';
 import { baseCapturePrompt } from '../ui/BaseCapturePrompt';
 import { difficultyLabels } from '../data/difficulty';
+import { VehicleManager } from '../vehicles/VehicleManager';
 
 export class Game {
   private engine: Engine;
@@ -29,6 +30,7 @@ export class Game {
   private camera: ThirdPersonCamera;
   private world: WorldManager;
   private controller: PlayerMovement;
+  private vehicles: VehicleManager;
   private missions: MissionManager;
   private combat: CombatSystem;
   private showCombat = false;
@@ -50,11 +52,12 @@ export class Game {
     this.player = new Player(this.scene); this.world = new WorldManager(this.scene, this.assetManager);
     this.camera = new ThirdPersonCamera(this.scene, this.player, this.input);
     this.controller = new PlayerMovement(this.player, this.input, this.camera, this.scene, this.world.spawn);
+    this.vehicles = new VehicleManager(this.scene,this.world,this.player,this.input,this.camera);
     this.missions = new MissionManager(this.scene);
     this.combat = new CombatSystem(this.scene, this.player, this.input, this.camera, this.world);
     this.combat.onMessage = message => this.hud.notify(message);
     this.combat.onRespawn = () => this.controller.reset();
-    this.combat.onDeath = () => this.controller.cancelAbilities();
+    this.combat.onDeath = () => { this.vehicles.leaveForDeath(); this.controller.cancelAbilities(); };
     this.missions.onAdvance = message => this.hud.notify(message);
     this.missions.onReward = score => { this.combat.score += score; };
     this.exploration.onDiscover = name => this.hud.notify(`${name} entdeckt · Schnellreise im Atlas freigeschaltet.`);
@@ -73,6 +76,9 @@ export class Game {
       this.world.chunks.update(1, this.player.position);
       this.hud.notify('Position befreit · du kannst dich wieder bewegen.');
     };
+    this.vehicles.onMessage = message => this.hud.notify(message);
+    this.vehicles.onEnter = () => this.controller.cancelAbilities();
+    this.vehicles.onReset = () => this.controller.reset();
     this.assetManager.onProgress = (done, total) => this.hud.loading(done, total);
     this.input.onPause = () => { this.running = false; this.map.close(); this.scene.animationsEnabled = false; this.accumulator = 0; this.hud.pause(true); };
     this.hud.onStart = () => void this.start();
@@ -126,9 +132,16 @@ export class Game {
       }
       this.camera.update(dt);
       this.accumulator += dt;
-      while (this.accumulator >= movement.fixedStep) { if (!this.player.dead) this.controller.update(movement.fixedStep); this.accumulator -= movement.fixedStep; }
+      while (this.accumulator >= movement.fixedStep) {
+        if (!this.player.dead) (this.vehicles.driving ? this.vehicles : this.controller).update(movement.fixedStep);
+        this.accumulator -= movement.fixedStep;
+      }
       const liberatedBaseIds = this.combat.bases.states.filter(base=>base.liberated).map(base=>base.definition.id);
       if (!this.player.dead && this.input.justPressed('interact') && this.missions.interact(this.player,liberatedBaseIds)) this.input.take('interact');
+      if (!this.player.dead && this.input.justPressed('interact')) {
+        const nearSupply=this.combat.nearSupply,event=this.vehicles.interact();
+        if(event) {this.input.take('interact');if(event==='entered'&&nearSupply)this.combat.resupply('Nachschub aufgenommen · SUV gestartet · W/S fahren · A/D lenken · E aussteigen');}
+      }
       this.combat.update(dt);
       this.saveTimer += dt;
       if (this.saveTimer >= 2) { this.saveGame(); this.saveTimer = 0; }
@@ -144,7 +157,9 @@ export class Game {
         this.hud.updateWorld(this.player, this.atmosphere?.clock ?? '08:30', this.combat.living.activitySummary);
         const nearbyBase = this.combat.bases.nearby(this.player.position);
         const interactionPrompt = this.missions.interactionPrompt;
+        const vehiclePrompt = this.vehicles.interactionPrompt;
         if (interactionPrompt) this.hud.element('hint').textContent = interactionPrompt;
+        else if(vehiclePrompt) this.hud.element('hint').textContent=vehiclePrompt;
         const target = this.controller.grapple.target(); this.hud.element('reticle').classList.toggle('valid', !!target);
         this.hud.element('target-label').textContent = target ? `F · ${Math.round(target.distance)} M` : '';
         this.updateMap();
@@ -155,7 +170,7 @@ export class Game {
         const progress = capture?.progress ?? this.missions.progress;
         this.hud.element('mission-progress').style.width = `${progress * 100}%`;
         this.hud.element('mission-count').textContent = capture?.count ?? `${this.missions.count} · M JOURNAL`;
-        if (nearbyBase && !interactionPrompt) this.hud.element('hint').textContent = capture!.hint;
+        if (nearbyBase && !interactionPrompt && !vehiclePrompt) this.hud.element('hint').textContent = capture!.hint;
         this.uiTimer = 0;
       }
     }
@@ -183,7 +198,7 @@ export class Game {
     storeGameSave(save);
   }
   private resetProgress() {
-    clearGameSave(); this.controller.reset(); this.missions.reset(); this.combat.reset(); this.exploration.reset();
+    clearGameSave(); this.vehicles.reset(); this.controller.reset(); this.missions.reset(); this.combat.reset(); this.exploration.reset();
     if (this.atmosphere) this.atmosphere.elapsed = 0;
     this.showCombat = false; this.world.chunks.update(1, this.player.position); this.atmosphere?.update(0, this.player.position); this.saveGame();
   }

@@ -17,7 +17,10 @@ async function fixture(obstacle: boolean|'batch'=false) {
     const wall=MeshBuilder.CreateBox('sidewalk-obstruction',{width:1,height:3,depth:5},scene);
     wall.position.set(x+2,terrainHeight(x,z)+1.5,z);wall.checkCollisions=true;
   }
-  const world={scene,flags:new Map(),material:()=>material,chunks:{add:()=>{}}} as unknown as WorldManager;
+  const world={scene,flags:new Map(),material:()=>material,chunks:{add:()=>{}},registerVehicle:(root:TransformNode,id:string)=>({
+    id,root,collider:MeshBuilder.CreateBox(`${id}-collider`,{size:1},scene),centerOffset:new Vector3(0,1,0),
+    initialPosition:root.position.clone(),initialRotationY:root.rotation.y,occupied:false,ambient:true,
+  })} as unknown as WorldManager;
   if(obstacle==='batch') {
     const geometry=new StaticGeometry(world),[x,z]=settlements[0].residentRoute[0],y=terrainHeight(x,z)+1.5;
     geometry.box(x-15,y,z+2,2,3,10,'#ffffff',true);geometry.box(x+15,y,z+2,2,3,10,'#ffffff',true);geometry.flush();

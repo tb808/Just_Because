@@ -38,6 +38,7 @@ export class PlayerMovement {
   reset() { this.setState('FALLING'); this.player.position.copyFrom(this.spawn); this.player.velocity.setAll(0); this.coyote = this.stalledFor = 0; this.markRecoveryPoint(this.spawn); this.input.clear(); this.camera.update(0, true); this.onReset(); }
   update(dt: number) {
     const p = this.player, v = p.velocity;
+    if(p.state==='IN_VEHICLE')return;
     const boundary = worldConfig.size / 2 - 12;
     if (this.input.take('unstuck')) { this.unstuck(); return; }
     if (this.input.take('reset') || p.position.y < -4 || Math.abs(p.position.x) > boundary || Math.abs(p.position.z) > boundary) { this.reset(); return; }

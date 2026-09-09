@@ -13,11 +13,16 @@ import { ChunkManager } from './ChunkManager';
 import { expandWorld } from './WorldExpansion';
 import type { TransformNode } from '@babylonjs/core/Meshes/transformNode';
 export interface WorldDestructible { id: string; root: TransformNode; collider: Mesh }
+export interface WorldVehicle {
+  id: string; root: TransformNode; collider: Mesh; centerOffset: Vector3;
+  initialPosition: Vector3; initialRotationY: number; occupied: boolean; ambient: boolean;
+}
 
 export class WorldManager {
   readonly chunks = new ChunkManager();
   readonly spawn = new Vector3(-20, 8, -300);
   readonly destructibles: WorldDestructible[] = [];
+  readonly vehicles: WorldVehicle[] = [];
   readonly supply = new Vector3(66, 7, -282);
   readonly supplies: Array<{baseId: string; position: [number,number,number]}> = [];
   readonly flags = new Map<string, Mesh>();
@@ -77,8 +82,31 @@ export class WorldManager {
       const size = b.max.subtract(b.min), center = b.max.add(b.min).scale(0.5);
       const proxy = this.box(`${name}-collider`, center.x, center.y, center.z, size.x, size.y, size.z, '#ffffff'); proxy.visibility = 0;
       if (name.startsWith('fuel-')) { proxy.metadata = { damageId: name }; this.destructibles.push({ id: name, root: instance.root, collider: proxy }); }
+      if (def.path === assets.vehicles.car.path) this.registerVehicle(instance.root, name, proxy, false);
     }
     this.chunks.add(instance.root);
     return instance;
+  }
+
+  registerVehicle(root: TransformNode, id: string, collider?: Mesh, ambient = true) {
+    root.computeWorldMatrix(true);
+    const bounds = root.getHierarchyBoundingVectors(true);
+    let size = bounds.max.subtract(bounds.min), center = bounds.max.add(bounds.min).scale(.5);
+    if (!size.asArray().every(Number.isFinite) || size.x < .5 || size.y < .5 || size.z < .5) {
+      size = new Vector3(2.25, 1.75, 4.5); center = root.position.add(new Vector3(0, .95, 0));
+    }
+    const proxy = collider ?? MeshBuilder.CreateBox(`${id}-collider`, {width:size.x,height:size.y,depth:size.z}, this.scene);
+    proxy.position.copyFrom(center); proxy.visibility = 0; proxy.isPickable = true; proxy.checkCollisions = true;
+    proxy.ellipsoid.copyFromFloats(Math.max(.75,size.x*.44),Math.max(.6,size.y*.44),Math.max(1.2,size.z*.44));
+    proxy.ellipsoidOffset.setAll(0); proxy.collisionRetryCount = 8; proxy.unfreezeWorldMatrix();
+    const dx=center.x-root.position.x,dz=center.z-root.position.z,c=Math.cos(root.rotation.y),s=Math.sin(root.rotation.y);
+    const vehicle: WorldVehicle = {
+      id,root,collider:proxy,centerOffset:new Vector3(dx*c-dz*s,center.y-root.position.y,dx*s+dz*c),
+      initialPosition:root.position.clone(),initialRotationY:root.rotation.y,occupied:false,ambient,
+    };
+    if (!ambient) {
+      root.metadata={...root.metadata,alwaysActive:true}; proxy.metadata={...proxy.metadata,alwaysActive:true};
+    }
+    this.vehicles.push(vehicle); return vehicle;
   }
 }

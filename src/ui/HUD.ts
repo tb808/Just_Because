@@ -33,7 +33,7 @@ export class HUD {
       <div class="pause-shade" id="shade"></div><section class="menu" id="menu" role="dialog" aria-modal="true" aria-labelledby="menu-title">
         <span class="eyebrow">CALA VENTRA / OFFENE INSEL</span><h1 id="menu-title">Eine Insel.<br>Tausend Wege.</h1><p>Durch lebendige Altstädte. Über weite Täler.<br>Entdecke acht Orte und befreie die Insel.</p>
         <div class="menu-actions"><button class="primary" id="start" disabled>INSEL WIRD GELADEN … <span>↗</span></button><button class="secondary new-game" id="new-game" disabled>NEUES SPIEL</button></div><p id="loading" class="loading" role="status">Gelände vorbereiten …</p>
-        <div class="controls"><div><kbd>W A S D</kbd><span>Bewegen</span></div><div><kbd>SHIFT</kbd><span>Sprinten</span></div><div><kbd>SPACE</kbd><span>Springen / Seil lösen</span></div><div><kbd>F / C / Q</kbd><span>Haken / Wingsuit / Schirm</span></div><div><kbd>MAUS</kbd><span>Kamera · Mausrad für Zoom</span></div><div><kbd>ESC</kbd><span>Pause</span></div></div>
+        <div class="controls"><div><kbd>W A S D</kbd><span>Bewegen / SUV fahren</span></div><div><kbd>SHIFT</kbd><span>Sprinten</span></div><div><kbd>SPACE</kbd><span>Springen / Seil lösen</span></div><div><kbd>F / C / Q</kbd><span>Haken / Wingsuit / Schirm</span></div><div><kbd>MAUS</kbd><span>Kamera · Mausrad für Zoom</span></div><div><kbd>ESC</kbd><span>Pause</span></div></div>
         <details><summary>Einstellungen & Credits</summary><label>Schwierigkeit<select id="difficulty"><option value="easy">Leicht</option><option value="medium" selected>Mittel</option><option value="hard">Schwer</option></select></label><small class="difficulty-note">Beeinflusst Treffsicherheit, Schaden und Lebenspunkte der Gegner.</small><label>Mausempfindlichkeit<input id="sensitivity" type="range" min="0.0007" max="0.005" step="0.0001" value="0.0022"></label><label>Renderqualität<select id="quality"><option value="1">Hoch</option><option value="1.25" selected>Ausgewogen</option><option value="1.6">Performance</option></select></label><p>3D-Modelle: Kenney · CC0<br>Eigene Welt und Traversal-Strukturen.<br>Movement-Prototyp: Kampf und Fahrzeuge folgen.</p><button id="reset" class="secondary">Zurück zum Startpunkt</button></details>
       </section><div class="toast" id="toast" role="status"></div>`;
     this.root.insertAdjacentHTML('beforeend', `<div class="damage-vignette" id="damage-vignette"></div><div class="combat-top"><span id="alarm">KEIN ALARM</span><span id="score">0000 PUNKTE</span></div><div class="weapon-hud"><span id="weapon-name">STURMGEWEHR · VELA-7</span><div><strong id="ammo">30</strong><span id="reserve"> / 240</span></div><small id="reload-status">1 / 2 WAFFENWECHSEL · R NACHLADEN</small><div class="reload-track"><span id="reload-progress"></span></div></div>`);
@@ -41,7 +41,7 @@ export class HUD {
     controls.insertAdjacentHTML('beforeend', '<div><kbd>LMB / RMB</kbd><span>Schiessen / Zielen</span></div><div><kbd>1 / 2 · R</kbd><span>Waffenwechsel · Nachladen</span></div><div><kbd>E</kbd><span>Sprechen / Auftrag / Nachschub</span></div><div><kbd>M · B</kbd><span>Journal / Nächster Auftrag</span></div>');
     const details = this.root.querySelector('details')!;
     details.querySelector('summary')!.insertAdjacentHTML('afterend', '<label>Lautstärke<input id="volume" type="range" min="0" max="1" step="0.05" value="0.35"></label>');
-    const credit = details.querySelector('p')!; credit.textContent = '3D-Modelle: Kenney · CC0. Eigene Welt, Ausrüstung und synthetisierte Sounds. Der SUV dient als Nachschubpunkt und ist noch nicht fahrbar.';
+    const credit = details.querySelector('p')!; credit.textContent = '3D-Modelle: Kenney · CC0. Eigene Welt, Ausrüstung und synthetisierte Sounds. Geparkte und fahrende SUVs können übernommen werden.';
     this.element('reset').textContent = 'Einsatz neu starten';
     controls.insertAdjacentHTML('beforeend','<div><kbd>TAB</kbd><span>Inselkarte öffnen</span></div><div><kbd>N</kbd><span>Nächste Basis verfolgen</span></div><div><kbd>U</kbd><span>Aus Boden / Kollision befreien</span></div>');
     controls.insertAdjacentHTML('beforeend','<div><kbd>T</kbd><span>Reise zu entdeckten Orten</span></div><div><kbd>↑ ↓ · E</kbd><span>Im Atlas wählen / bestätigen</span></div>');
@@ -88,7 +88,7 @@ export class HUD {
     this.speed.textContent = Math.round(player.speed * 3.6).toString().padStart(3, '0');
     this.altitude.textContent = `${Math.max(0, Math.round(player.position.y - 0.9))} M Ü. M.`;
     this.metrics.textContent = `${Math.round(fps)} FPS · ${chunks} AKTIVE SEKTOREN`;
-    this.hint.textContent = player.state === 'ON_FOOT' ? 'SHIFT sprinten · SPACE springen · F auf eine Oberfläche · U befreien' : player.state === 'WINGSUIT' ? 'W Sturzflug / Tempo · S hochziehen / Höhe · A D Kurven · Q Fallschirm' : 'F Greifhaken · C Wingsuit · Q Fallschirm · U befreien';
+    this.hint.textContent = player.state === 'IN_VEHICLE' ? 'W/S Gas, Bremse und Rückwärtsgang · A/D lenken · E aussteigen · U Fahrzeug befreien' : player.state === 'ON_FOOT' ? 'SHIFT sprinten · SPACE springen · F auf eine Oberfläche · U befreien' : player.state === 'WINGSUIT' ? 'W Sturzflug / Tempo · S hochziehen / Höhe · A D Kurven · Q Fallschirm' : 'F Greifhaken · C Wingsuit · Q Fallschirm · U befreien';
     for (const [id, state] of [['grapple', 'GRAPPLING'], ['wingsuit', 'WINGSUIT'], ['parachute', 'PARACHUTE']]) this.element(`ability-${id}`).classList.toggle('active', player.state === state);
   }
   updateCombat(combat: CombatSystem) {
@@ -106,7 +106,8 @@ export class HUD {
     this.element('damage-vignette').style.opacity = String(Math.min(0.7, combat.hurtFlash * 2));
     (this.root.querySelector('.health-line') as HTMLElement).style.transform = `scaleX(${combat.health.current / combat.health.max})`;
     this.altitude.textContent += ` · ${Math.ceil(combat.health.current)} HP`;
-    if (combat.nearSupply) this.hint.textContent = 'E · Gesundheit und Munition am SUV auffüllen';
+    if(this.state.textContent==='IM FAHRZEUG') this.hint.textContent='W/S Gas, Bremse und Rückwärtsgang · A/D lenken · E aussteigen · U Fahrzeug befreien';
+    else if (combat.nearSupply) this.hint.textContent = 'E · SUV fahren und Nachschub aufnehmen';
     else if(combat.nearResident) this.hint.textContent='E · Mit Bewohner sprechen';
     else this.hint.textContent += ' · M Journal · TAB Atlas';
   }

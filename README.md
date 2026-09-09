@@ -25,6 +25,7 @@ Die ausgegebene lokale Adresse öffnen und **Spielen** klicken. Bei einem defekt
 - **39 auswählbare Aufträge mit 128 Zielen:** Höhenroute, acht Lieferaufträge, acht Nachbarschaftsaufträge, sechs Befreiungsoperationen, sechs Aufklärungen, vier Zeitläufe, vier Fundstückrouten, Inselpass und Finale. Mehrere Etappen, Voraussetzungen, Interaktionen und einmalige Punktebelohnungen.
 - **Sechs Basen, 50 Wachen und 17 Tanks.** Schalte die Ziele einer Basis aus und halte ihre Flagge sechs Sekunden. Danach kehren Bewohner zurück, Nachschub wird verfügbar und die Flagge wechselt die Farbe.
 - **Bewohner und Verkehr:** Menschen mit sechs Berufen, unterschiedlicher Kleidung, Laufwegen, Arbeits- und Marktpausen, Gesprächen und örtlichen Dialogen. Bei Schüssen laufen sie zu sicheren Punkten und beruhigen sich allmählich. 18 Autos fahren auf getrennten Fahrspuren, bremsen und reagieren auf Fussgänger und andere Fahrzeuge. Entfernte Figuren werden deaktiviert.
+- **Fahrbare SUVs:** Steige mit E in geparkte oder fahrende SUVs ein. W/S steuern Gas, Bremse und Rückwärtsgang, A/D lenken; E steigt wieder aus und U setzt ein festgefahrenes Fahrzeug auf die letzte sichere Position.
 - **Überarbeitete Atmosphäre:** eigene Wasseranimation, Himmelsverlauf, ziehende Wolken, Küstenvögel, wechselndes Tageslicht und nahe Schatten. Die Einstellung Performance deaktiviert Schatten.
 - **Inselatlas, Journal und Reisen:** Die Minikarte folgt dem Spieler. Entdeckte Siedlungen werden für Schnellreise freigeschaltet; Reisen funktioniert am Boden ohne Alarm und ohne laufenden Zeitauftrag.
 - **Lokaler Spielstand:** Position, Aufträge, Punkte, Gesundheit, Munition, besiegte Wachen, zerstörte Tanks, befreite Basen, entdeckte Orte und Tageslichtzeit werden automatisch gesichert. Ältere Spielstände bleiben lesbar. Rücktaste behält den Einsatzfortschritt; Einsatz neu starten setzt ihn zurück.
@@ -36,6 +37,7 @@ Die ausgegebene lokale Adresse öffnen und **Spielen** klicken. Bei einem defekt
 | WASD / Shift / Space | Bewegen / Sprinten / Springen |
 | Maus / Mausrad | Kamera / Zoom |
 | F | Greifhaken an eine Oberfläche; erneut lösen |
+| E am SUV | Einsteigen / aussteigen (W/S fahren, A/D lenken) |
 | Space während Greifhaken | Seil lösen, Schwung behalten |
 | C / Q | Wingsuit / Fallschirm in der Luft |
 | W / S im Wingsuit | Sturzflug beschleunigen / hochziehen und Tempo in Höhe umwandeln |

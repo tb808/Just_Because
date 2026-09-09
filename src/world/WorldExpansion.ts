@@ -1,5 +1,5 @@
-import { Mesh } from '@babylonjs/core/Meshes/mesh';
-import { VertexData } from '@babylonjs/core/Meshes/mesh.vertexData';
+import { buildRoadNetwork } from './RoadNetwork';
+import { roadLift } from './RoadSurface';
 import { bases } from '../data/bases';
 import { assets } from '../data/assets';
 import { distanceToRoad, settlements, worldLocations, worldRoads, type GroundPoint, type SettlementDefinition, type WorldLocation } from '../data/world';
@@ -10,11 +10,11 @@ import type { WorldManager } from './WorldManager';
 export async function expandWorld(world: WorldManager) {
   const jobs: Promise<unknown>[] = [], geometry=new StaticGeometry(world);
   for (const base of bases) buildBase(world, base, jobs,geometry);
-  for (const [name, points] of Object.entries(worldRoads)) road(world, geometry, `${name}-road`, points);
+  buildRoadNetwork(world);
   for (const settlement of settlements) buildTown(world,geometry,settlement);
   buildMarket(geometry,-335,-306,'#d78958');
-  const bridgeY=terrainHeight(-235,-286);
-  geometry.box(-235,bridgeY+.12,-286,72,.24,10,'#9da99a',true);
+  // The old horizontal bridge slab cut across sloping asphalt. The graded road
+  // now supplies its continuous deck; the roadside masonry stays outside it.
   for(const z of [-292,-280]) for(let x=-267;x<-200;x+=12)geometry.box(x,terrainHeight(x,z)+.8,z,.6,1.6,.6,'#d8ddc6',true);
   // Mirada is now the inland cargo terminal; its original pier remains an elevated loading boardwalk.
   const pierY=terrainHeight(-505,-220)+.5;
@@ -65,8 +65,8 @@ function buildTown(world:WorldManager,g:StaticGeometry,town:SettlementDefinition
   buildMarket(g,town.market[0],town.market[1],town.color);
   // Four crossing stripes make the traffic/pedestrian crossings legible.
   for(const ox of [-56,0,56])for(const oz of [-56,0,56])for(let stripe=-3;stripe<=3;stripe++) {
-    g.box(cx+ox+stripe,y+.205,cz+oz+5.2,.5,.012,2.5,'#e9e0bd');
-    g.box(cx+ox+5.2,y+.205,cz+oz+stripe,2.5,.012,.5,'#e9e0bd');
+    g.box(cx+ox+stripe,y+roadLift+.018,cz+oz+5.2,.5,.012,2.5,'#e9e0bd');
+    g.box(cx+ox+5.2,y+roadLift+.018,cz+oz+stripe,2.5,.012,.5,'#e9e0bd');
   }
   const tx=cx+edge-18,tz=cz+edge-18;
   g.box(tx,y+13,tz,9,26,9,town.color,true);g.box(tx,y+26.3,tz,10,.6,10,'#d5ddd0',true);
@@ -233,21 +233,5 @@ function buildLandscape(g:StaticGeometry) {
     if(i%5<3)tree(g,x,z,scale,y>65?'pine':y<15&&i%3===0?'palm':i%4===0?'cypress':'olive');
     else if(i%5===3) {g.cylinder(x,y+.6*scale,z,1.6*scale,1.2*scale,'#648959',false,.8*scale,5);g.cylinder(x+.9,y+.35,z+.4,.9,.7,'#86a574',false,.4,5);}
     else {g.cylinder(x,y+.9*scale,z,2.2*scale,1.8*scale,'#9b9d8b',true,1.3*scale,5);for(let tuft=0;tuft<3;tuft++)g.box(x+tuft-.8,y+.45,z+2,.14,.9,.15,'#a5b97a',false,tuft);}
-  }
-}
-
-function road(world:WorldManager,g:StaticGeometry,name:string,points:readonly GroundPoint[]) {
-  // Per-segment bounds let the renderer cull long-distance roads instead of keeping the entire island network active.
-  for(let i=1;i<points.length;i++) {
-    const [ax,az]=points[i-1],[bx,bz]=points[i],length=Math.hypot(bx-ax,bz-az);if(length<.01)continue;
-    const count=Math.ceil(length/6),rx=(bz-az)/length*4,rz=-(bx-ax)/length*4;
-    const positions:number[]=[],indices:number[]=[],normals:number[]=[];
-    for(let j=0;j<count;j++) {
-      const a=j/count,b=(j+1)/count,start=positions.length/3;
-      for(const [t,s] of [[a,-1],[a,1],[b,-1],[b,1]]) {const x=ax+(bx-ax)*t+rx*s,z=az+(bz-az)*t+rz*s;positions.push(x,terrainHeight(x,z)+.18,z);}
-      indices.push(start,start+2,start+1,start+1,start+2,start+3);
-    }
-    VertexData.ComputeNormals(positions,indices,normals);const data=new VertexData();Object.assign(data,{positions,indices,normals});const mesh=new Mesh(`${name}-${i}`,world.scene);data.applyToMesh(mesh);mesh.material=world.material('#576d6b');mesh.checkCollisions=true;mesh.receiveShadows=true;mesh.freezeWorldMatrix();
-    if(!name.includes('street')&&!name.includes('avenue')&&!name.includes('ring'))for(let marker=18;marker<length;marker+=25) {const t=marker/length,x=ax+(bx-ax)*t,z=az+(bz-az)*t;g.box(x,terrainHeight(x,z)+.2,z,.14,.025,4,'#e9e0bd',false,Math.atan2(bx-ax,bz-az));}
   }
 }

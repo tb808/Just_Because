@@ -5,10 +5,12 @@ import type { AbstractMesh } from '@babylonjs/core/Meshes/abstractMesh';
 import { CharacterAnimator } from '../core/CharacterAnimator';
 import type { AssetManager } from '../core/AssetManager';
 import type { WorldManager } from './WorldManager';
+import type { WorldVehicle } from './WorldManager';
 import { assets, residentCharacterModels } from '../data/assets';
 import { bases } from '../data/bases';
 import { miradaResidentRoute, settlements, worldRoads, type GroundPoint, type SettlementDefinition } from '../data/world';
 import { terrainHeight } from './Terrain';
+import { roadSurfaceHeight } from './RoadSurface';
 import { approachSpeed, buildTrafficCircuit, directionToDestination, distanceSquared, planEscape, residentActivity, residentRoles, routineDestination, segmentHitsObstacle, trafficTargetSpeed, wrapIndex, type GroundObstacle, type ResidentActivity, type ResidentRole, type RoadUser } from './AmbientBehavior';
 
 interface Resident {
@@ -20,7 +22,7 @@ interface Resident {
 }
 interface Traffic {
   root: TransformNode; route: Vector3[]; next: number; speed: number; cruise: number;
-  waiting: number; initial: Vector3; initialNext: number; active: boolean;
+  waiting: number; initial: Vector3; initialNext: number; active: boolean; vehicle: WorldVehicle; wasOccupied: boolean;
 }
 interface Obstacle extends GroundObstacle { mesh: AbstractMesh; minY: number; maxY: number }
 const point = (vector: Vector3): GroundPoint => [vector.x, vector.z];
@@ -62,15 +64,17 @@ export class LivingWorld {
       const circuit = buildTrafficCircuit(worldRoads[roads[i]] ?? [], 2);
       if (circuit.length < 4) continue;
       const model = await manager.instantiate(assets.vehicles.car, `ambient-traffic-${i}`);
-      const route = circuit.map(([x,z]) => new Vector3(x, terrainHeight(x,z)+.2, z));
+      const route = circuit.map(([x,z]) => new Vector3(x, roadSurfaceHeight(x,z)+.2, z));
       const start = i % route.length, next = (start+1) % route.length;
       model.root.position.copyFrom(route[start]);
       model.root.rotation.y = Math.atan2(route[next].x-route[start].x,route[next].z-route[start].z);
+      const vehicle=this.world.registerVehicle(model.root,`ambient-traffic-${i}`);
       const trim = MeshBuilder.CreateBox(`traffic-roof-${i}`, {width:1.25,height:.09,depth:1.3},this.world.scene);
       trim.parent = model.root; trim.position.y = 2.02 / model.root.scaling.y; trim.scaling.setAll(1/model.root.scaling.y);
       trim.material = this.world.material(clothingColors[i % clothingColors.length]); trim.isPickable = false;
       model.root.setEnabled(false);
-      this.traffic.push({root:model.root,route,next,speed:0,cruise:i<10?10.5+(i%3):6.5,waiting:(i%4)*.65,initial:route[start].clone(),initialNext:next,active:false});
+      vehicle.collider.setEnabled(false);
+      this.traffic.push({root:model.root,route,next,speed:0,cruise:i<10?10.5+(i%3):6.5,waiting:(i%4)*.65,initial:route[start].clone(),initialNext:next,active:false,vehicle,wasOccupied:false});
     }
   }
 
@@ -250,6 +254,15 @@ export class LivingWorld {
   }
   private updateTraffic(dt: number, player: Vector3, residents: Resident[]) {
     for(const car of this.traffic) {
+      if(car.vehicle.occupied) {
+        car.wasOccupied=true; car.active=true; car.root.setEnabled(true); car.vehicle.collider.setEnabled(true);
+        continue;
+      }
+      if(car.wasOccupied) {
+        let nearest=0,distance=Number.POSITIVE_INFINITY;
+        car.route.forEach((point,index)=>{const next=Vector3.DistanceSquared(point,car.root.position);if(next<distance){distance=next;nearest=index;}});
+        car.next=nearest;car.speed=0;car.waiting=.6;car.wasOccupied=false;
+      }
       car.waiting=Math.max(0,car.waiting-dt);
       const target=car.route[car.next],delta=target.subtract(car.root.position);delta.y=0;
       const remaining=delta.length();
@@ -265,15 +278,18 @@ export class LivingWorld {
       car.speed=approachSpeed(car.speed,desired,dt);
       const proposed=car.root.position.add(delta.scale(Math.min(remaining,car.speed*dt)));
       if(!this.blocked(car.root.position,proposed,1.1)) car.root.position.copyFrom(proposed); else car.speed=0;
-      car.root.position.y=terrainHeight(car.root.position.x,car.root.position.z)+.2;
+      car.root.position.y=roadSurfaceHeight(car.root.position.x,car.root.position.z)+.2;
       this.face(car.root,delta,dt*1.5);
       const active=Vector3.DistanceSquared(car.root.position,player)<420**2;
-      if(active!==car.active) {car.root.setEnabled(active);car.active=active;}
+      if(active!==car.active) {car.root.setEnabled(active);car.vehicle.collider.setEnabled(active);car.active=active;}
+      const c=Math.cos(car.root.rotation.y),s=Math.sin(car.root.rotation.y),offset=car.vehicle.centerOffset;
+      car.vehicle.collider.position.set(car.root.position.x+offset.x*c+offset.z*s,car.root.position.y+offset.y,car.root.position.z-offset.x*s+offset.z*c);
+      car.vehicle.collider.rotation.y=car.root.rotation.y;car.vehicle.collider.computeWorldMatrix(true);
     }
   }
   reset() {
     this.friendly.clear();this.time=0;this.socialTimer=0;this.activeCount=0;
     for(const npc of this.residents) {npc.root.position.copyFrom(npc.initial);npc.next=npc.initialNext;npc.direction=1;npc.fear=0;npc.waiting=0;npc.shelter=-1;npc.talkTarget=undefined;npc.socialTarget=undefined;npc.threat=undefined;npc.blockedTime=0;npc.activity=residentActivity(npc.role,0,npc.index*13);npc.returning=false;npc.destination=routineDestination(npc.role,npc.activity,npc.route.length,npc.initialNext);npc.animator.reset();npc.active=false;npc.root.setEnabled(false);}
-    for(const car of this.traffic) {car.root.position.copyFrom(car.initial);car.next=car.initialNext;car.speed=0;car.waiting=0;car.active=false;car.root.setEnabled(false);}
+    for(const car of this.traffic) {car.root.position.copyFrom(car.initial);car.root.rotation.y=car.vehicle.initialRotationY;car.next=car.initialNext;car.speed=0;car.waiting=0;car.active=false;car.wasOccupied=false;car.vehicle.occupied=false;car.root.setEnabled(false);car.vehicle.collider.setEnabled(false);}
   }
 }
