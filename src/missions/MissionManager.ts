@@ -14,6 +14,8 @@ export class MissionManager extends MissionProgress {
   private diamond!: Mesh;
   private parcel!: Mesh;
   private beam!: Mesh;
+  private terminal!: Mesh;
+  private archive!: Mesh;
   private material!: StandardMaterial;
   private markerKey = '';
   private animationTime = 0;
@@ -41,8 +43,17 @@ export class MissionManager extends MissionProgress {
       mesh.parent = this.marker; mesh.isPickable = false; mesh.material = this.material;
     }
     this.parcel.material = parcelMaterial; this.beam.material = beamMaterial;
+    this.terminal = MeshBuilder.CreateBox('mission-terminal', { width: 1.15, height: 1.3, depth: .65 }, scene);
+    this.terminal.parent = this.marker; this.terminal.position.y = -.3; this.terminal.isPickable = false;
+    const housing = new StandardMaterial('terminal-housing', scene); housing.diffuseColor = Color3.FromHexString('#25434b'); this.terminal.material = housing;
+    const screen = MeshBuilder.CreateBox('terminal-screen', { width: .88, height: .48, depth: .02 }, scene);
+    screen.parent = this.terminal; screen.position.set(0, .3, -.34); screen.isPickable = false;
+    const glow = new StandardMaterial('terminal-screen-glow', scene); glow.emissiveColor = Color3.FromHexString('#67d9cf'); glow.diffuseColor = Color3.Black(); screen.material = glow;
+    this.archive = MeshBuilder.CreateBox('mission-archive', { width: .7, height: .35, depth: .5 }, scene);
+    this.archive.parent = this.marker; this.archive.position.y = -.8; this.archive.material = housing; this.archive.isPickable = false;
     this.syncMarker();
   }
+  setCinematic(hidden: boolean) { this.marker?.setEnabled(!hidden && !!this.objective); }
   override update(dt: number, player: MissionActor, context: { liberatedBaseIds?: readonly string[] } = {}) {
     super.update(dt, player, context); this.syncMarker();
     this.animationTime += Number.isFinite(dt) ? Math.max(0, dt) : 0;
@@ -65,10 +76,12 @@ export class MissionManager extends MissionProgress {
     if (!objective || this.markerKey === `${this.tracked.id}:${objective.id}`) return;
     this.markerKey = `${this.tracked.id}:${objective.id}`;
     this.marker.position.copyFromFloats(...objective.position);
-    const airborne = this.tracked.category === 'Höhenroute';
+    const airborne = objective.airborne || this.tracked.category === 'Höhenroute';
     this.ring.rotation.x = airborne ? Math.PI / 2 : 0;
     this.ring.position.y = airborne ? 1.5 : -0.72;
-    this.parcel.setEnabled(objective.kind === 'interact');
+    this.parcel.setEnabled(objective.kind === 'interact' && !objective.prop);
+    this.terminal.setEnabled(objective.prop === 'terminal' && objective.kind !== 'liberate');
+    this.archive.setEnabled(objective.prop === 'archive');
     this.beam.setEnabled(!airborne);
     const color = objective.kind === 'hold' ? '#5ce4df' : objective.kind === 'liberate' ? '#f18d75' : '#f3c65a';
     this.material.diffuseColor = Color3.FromHexString(color); this.material.emissiveColor = this.material.diffuseColor.scale(0.5);

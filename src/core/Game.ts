@@ -21,6 +21,7 @@ import { baseCapturePrompt } from '../ui/BaseCapturePrompt';
 import { difficultyLabels } from '../data/difficulty';
 import { VehicleManager } from '../vehicles/VehicleManager';
 import { CollisionQueries } from '../world/CollisionQueries';
+import { CutsceneDirector } from '../story/CutsceneDirector';
 
 export class Game {
   private engine: Engine;
@@ -33,6 +34,7 @@ export class Game {
   private controller: PlayerMovement;
   private vehicles: VehicleManager;
   private missions: MissionManager;
+  private story: CutsceneDirector;
   private combat: CombatSystem;
   private showCombat = false;
   private atmosphere?: Atmosphere;
@@ -60,12 +62,21 @@ export class Game {
     this.controller = new PlayerMovement(this.player, this.input, this.camera, this.scene, this.world.spawn);
     this.vehicles = new VehicleManager(this.scene,this.world,this.player,this.input,this.camera);
     this.missions = new MissionManager(this.scene);
+    this.story = new CutsceneDirector(this.scene, this.input);
+    this.story.onFinish = (id, choice) => {
+      this.missions.finishScene(id, choice); this.player.visual.setEnabled(true);
+      this.missions.setCinematic(false); this.camera.update(0, true); this.accumulator = 0;
+      this.world.chunks.update(1, this.player.position); this.saveGame();
+      if (id === 'ending') this.hud.storyEnding(this.missions.choice);
+      else this.hud.notify(`Weiter: ${this.missions.objective?.title ?? 'Cala Ventra erkunden'}`);
+    };
     this.combat = new CombatSystem(this.scene, this.player, this.input, this.camera, this.world);
     this.combat.onMessage = message => this.hud.notify(message);
     this.combat.onRespawn = () => this.controller.reset();
     this.combat.onDeath = () => { this.vehicles.leaveForDeath(); this.controller.cancelAbilities(); };
     this.missions.onAdvance = message => this.hud.notify(message);
     this.missions.onReward = score => { this.combat.score += score; };
+    this.missions.onRadio = line => this.hud.radio(line.speaker, line.text);
     this.exploration.onDiscover = name => this.hud.notify(`${name} entdeckt · Schnellreise im Atlas freigeschaltet.`);
     this.map.onTrackMission = id => {
       if (!this.missions.setTracked(id)) { this.hud.notify('Dieser Auftrag ist abgeschlossen oder benötigt zuerst einen vorherigen Auftrag.'); return; }
@@ -86,11 +97,11 @@ export class Game {
     this.vehicles.onEnter = () => this.controller.cancelAbilities();
     this.vehicles.onReset = () => this.controller.reset();
     this.assetManager.onProgress = (done, total) => this.hud.loading(done, total);
-    this.input.onPause = () => { this.running = false; this.map.close(); this.scene.animationsEnabled = false; this.accumulator = 0; this.hud.pause(true); };
+    this.input.onPause = () => { this.running = false; this.story.pauseAudio(true); this.map.close(); this.scene.animationsEnabled = false; this.accumulator = 0; this.hud.pause(true); this.saveGame(); };
     this.hud.onStart = () => void this.start();
     this.hud.onNewGame = () => { this.resetProgress(); void this.start(); };
     this.hud.onReset = () => this.resetProgress();
-    this.hud.onVolume = value => this.combat.audio.volume = value;
+    this.hud.onVolume = value => { this.combat.audio.volume = value; this.story.volume = value; };
     this.hud.onSensitivity = value => this.camera.sensitivity = value;
     this.hud.onQuality = value => { this.engine.setHardwareScalingLevel(value); this.atmosphere?.setQuality(value); };
     this.hud.onDifficulty = value => { this.combat.setDifficulty(value); this.saveGame(); this.hud.notify(`Schwierigkeit: ${difficultyLabels[value]}`); };
@@ -99,7 +110,7 @@ export class Game {
     window.addEventListener('pagehide', () => this.saveGame(), { signal: this.abort.signal });
   }
   async init() {
-    await Promise.all([this.world.create(), this.player.load(this.assetManager)]);
+    await Promise.all([this.world.create(), this.player.load(this.assetManager), this.story.load(this.assetManager)]);
     await this.combat.load(this.assetManager);
     new CollisionQueries(this.scene);
     this.atmosphere = new Atmosphere(this.scene);
@@ -118,12 +129,14 @@ export class Game {
   }
   private async start() {
     this.combat.audio.start();
+    this.story.unlockAudio(); this.story.pauseAudio(false);
     try { await this.input.lock(); this.running = true; this.map.close(); this.scene.animationsEnabled = true; this.accumulator = 0; this.input.clear(); this.hud.pause(false); if (this.input.dragMode) this.hud.notify('Kamera: rechte Maustaste ziehen oder Pfeiltasten. ESC pausiert.'); }
     catch { this.hud.error('Die Maussperre wurde blockiert. Öffne das Spiel in einem eigenen Browser-Tab und klicke erneut auf Spielen.'); }
   }
   private frame() {
     const dt = Math.min(this.engine.getDeltaTime() / 1000, movement.maxFrameTime);
     if (this.running && this.input.locked) {
+      if (this.playStory(dt)) { this.scene.render(); return; }
       if (this.input.take('map')) { if(this.map.open) this.closeAtlas(); else this.toggleAtlas('world'); }
       else if (this.input.take('mission')) this.toggleAtlas('journal');
       else if (this.input.take('travel')) this.toggleAtlas('travel');
@@ -145,6 +158,7 @@ export class Game {
       }
       const liberatedBaseIds = this.combat.bases.states.filter(base=>base.liberated).map(base=>base.definition.id);
       if (!this.player.dead && this.input.justPressed('interact') && this.missions.interact(this.player,liberatedBaseIds)) this.input.take('interact');
+      if (this.playStory(0)) { this.scene.render(); return; }
       if (!this.player.dead && this.input.justPressed('interact')) {
         const nearSupply=this.combat.nearSupply,event=this.vehicles.interact();
         if(event) {this.input.take('interact');if(event==='entered'&&nearSupply)this.combat.resupply('Nachschub aufgenommen · SUV gestartet · W/S fahren · A/D lenken · E aussteigen');}
@@ -156,6 +170,8 @@ export class Game {
       if (this.input.take('nextMission')) { this.missions.cycle(); this.showCombat=false; this.hud.notify(`Auftrag · ${this.missions.tracked?.title ?? 'Alles erledigt'}`); }
       this.player.animate(dt); this.controller.grapple.render(); this.world.chunks.update(dt, this.player.position);
       this.missions.update(dt, this.player, {liberatedBaseIds});
+      if (this.playStory(0)) { this.scene.render(); return; }
+      this.story.updateContact(this.missions.objective, dt, this.player.position);
       this.atmosphere?.update(dt,this.player.position); this.exploration.update(this.player.position);
       this.uiTimer += dt;
       if (this.uiTimer > 0.1) {
@@ -170,18 +186,34 @@ export class Game {
         const target = this.controller.grapple.target(); this.hud.element('reticle').classList.toggle('valid', !!target);
         this.hud.element('target-label').textContent = target ? `F · ${Math.round(target.distance)} M` : '';
         this.updateMap();
-        const base = nearbyBase ?? (this.showCombat ? this.combat.bases.tracked : undefined);
+        const storyBaseId = this.missions.objective?.baseId;
+        const base = this.showCombat ? nearbyBase ?? this.combat.bases.tracked
+          : this.missions.tracked.chapter ? this.combat.bases.states.find(b => b.definition.id === storyBaseId) : nearbyBase;
         const capture = base ? baseCapturePrompt(base, this.player.position) : undefined;
         this.hud.element('mission-title').textContent = capture?.title ?? (this.missions.tracked?.title ?? 'Cala Ventra erkunden');
+        this.hud.element('mission-chapter').textContent = capture ? 'GEBIET BEFREIEN' : this.missions.tracked.chapter ? `${this.missions.tracked.act} · ${this.missions.tracked.chapter}/8` : 'FREIWILLIGER AUFTRAG';
         this.hud.element('mission-detail').textContent = capture?.detail ?? (this.missions.objective?.description ?? 'Erkunde Cala Ventra frei.');
         const progress = capture?.progress ?? this.missions.progress;
         this.hud.element('mission-progress').style.width = `${progress * 100}%`;
         this.hud.element('mission-count').textContent = capture?.count ?? `${this.missions.count} · M JOURNAL`;
-        if (nearbyBase && !interactionPrompt && !vehiclePrompt) this.hud.element('hint').textContent = capture!.hint;
+        if (nearbyBase && capture && !interactionPrompt && !vehiclePrompt) this.hud.element('hint').textContent = capture.hint;
         this.uiTimer = 0;
       }
     }
     this.scene.render();
+  }
+  private playStory(dt: number) {
+    if (this.player.dead) return false;
+    if (!this.story.active && this.missions.pendingScene) {
+      this.story.start(this.missions.pendingScene, this.missions.choice);
+      this.showCombat = false; this.accumulator = 0; this.missions.setCinematic(true);
+      this.player.visual.setEnabled(false); this.world.chunks.update(1, this.story.position);
+      this.saveGame();
+    }
+    if (!this.story.active) return false;
+    this.story.update(dt);
+    if (this.story.active) this.atmosphere?.update(0, this.story.position);
+    return true;
   }
   private updateMap() { this.map.update(this.combat.bases,this.player,this.missions,this.exploration,this.showCombat); }
   private toggleAtlas(view: 'world'|'journal'|'travel') {
@@ -205,9 +237,10 @@ export class Game {
     storeGameSave(save);
   }
   private resetProgress() {
+    this.story.stop(); this.player.visual.setEnabled(true);
     clearGameSave(); this.vehicles.reset(); this.controller.reset(); this.missions.reset(); this.combat.reset(); this.exploration.reset();
     if (this.atmosphere) this.atmosphere.elapsed = 0;
     this.showCombat = false; this.world.chunks.update(1, this.player.position); this.atmosphere?.update(0, this.player.position); this.saveGame();
   }
-  dispose() { this.saveGame(); this.abort.abort(); this.input.dispose(); this.combat.dispose(); this.atmosphere?.dispose(); this.engine.stopRenderLoop(); this.scene.dispose(); this.assetManager.dispose(); this.engine.dispose(); }
+  dispose() { this.saveGame(); this.story.dispose(); this.abort.abort(); this.input.dispose(); this.combat.dispose(); this.atmosphere?.dispose(); this.engine.stopRenderLoop(); this.scene.dispose(); this.assetManager.dispose(); this.engine.dispose(); }
 }

@@ -126,6 +126,7 @@ export class WorldMap {
   switchView(direction: number) { const views: AtlasView[] = ['world','journal','travel']; this.setView(views[(views.indexOf(this.view)+direction+3)%3]); }
   confirm() {
     const row = this.rows[this.selection]; if (!row) return;
+    if (this.view === 'journal' && (row.status === 'ERLEDIGT' || row.status === 'GESPERRT')) return;
     if (this.view === 'journal') this.onTrackMission(row.id);
     else if (this.view === 'travel') this.onTravel(row.id);
     else this.onTrackBase(row.id);
@@ -161,9 +162,17 @@ export class WorldMap {
     if (!this.open) return;
     const labels = {locked:'GESPERRT',available:'BEREIT',active:'VERFOLGT',complete:'ERLEDIGT'};
     if (this.view === 'journal') {
-      this.rows = missions.entries.map(entry => ({id:entry.definition.id,title:entry.definition.title,description:entry.definition.description,
-        label:`${entry.definition.category} · ${entry.step}/${entry.total} · +${entry.definition.reward}`,status:labels[entry.status]}));
-      this.text('atlas-help', 'Wähle einen Auftrag. Goldene Ringe markieren das nächste Ziel. E führt vor Ort die angezeigte Aktion aus.');
+      if (!this.rows.length) this.selection = Math.max(0, missions.definitions.findIndex(d => d.id === missions.tracked.id));
+      this.rows = missions.entries.map(entry => {
+        const d = entry.definition, locked = entry.status === 'locked';
+        const prerequisite = d.requires?.map(id => missions.definitions.find(m => m.id === id)?.chapter).filter(Boolean).join(', ');
+        const next = d.objectives[entry.step];
+        const outcome = missions.choice === 'shield' ? 'Deine Entscheidung: Zeugenkennungen schützen.' : missions.choice === 'open' ? 'Deine Entscheidung: Das Original öffentlich senden.' : '';
+        return { id:d.id, title: locked && d.chapter ? `Kapitel ${String(d.chapter).padStart(2, '0')} · Noch unbekannt` : d.chapter ? `${String(d.chapter).padStart(2, '0')} / ${d.title}` : d.title,
+          description: locked ? `Setze die Geschichte fort. Wird nach Kapitel ${prerequisite} freigeschaltet.` : entry.status === 'complete' ? `${d.recap ?? d.description}${d.chapter && d.chapter >= 6 ? ` ${outcome}` : ''}` : `${d.description}${next ? ` Nächstes Ziel: ${next.title}.` : ''}`,
+          label: `${d.chapter ? d.act : 'Freiwillig · ' + d.category} · ${entry.step}/${entry.total} · +${d.reward}`, status: labels[entry.status] };
+      });
+      this.text('atlas-help', `${missions.storyCompletedCount}/8 Kapitel · ${missions.storyComplete ? 'Geschichte abgeschlossen. Die Insel bleibt spielbar.' : 'Folge der Geschichte oder nimm dir Zeit für einen freiwilligen Auftrag.'} Abgeschlossene Kapitel enthalten einen Rückblick.`);
     } else if (this.view === 'travel') {
       this.rows = settlements.map(place => ({id:place.id,title:place.name,description:place.character,
         label:`${Math.round(Math.hypot(player.position.x-place.center[0],player.position.z-place.center[1]))} m entfernt`,status:exploration.discovered.has(place.id)?'ENTDECKT':'UNERKUNDET'}));
@@ -177,14 +186,16 @@ export class WorldMap {
       this.text('atlas-help', 'Erkundete Gebiete werden sichtbar. Rot gehört dem Direktorat; mit der Basis werden das Land und seine Städte blau und frei.');
     }
     this.selection = Math.min(this.selection, Math.max(0,this.rows.length-1));
-    const signature = JSON.stringify([this.view,this.selection,this.rows.map(r=>[r.id,r.status,r.label])]);
+    const signature = JSON.stringify([this.view,this.selection,this.rows.map(r=>[r.id,r.status,r.label,r.description])]);
     if (signature !== this.listSignature) {
       this.listSignature = signature;
       this.root.querySelectorAll<HTMLElement>('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===this.view));
       this.root.querySelector('#atlas-list')!.innerHTML = this.rows.map((row,i)=>`<button role="listitem" data-index="${i}" aria-current="${i===this.selection}" class="atlas-row ${i===this.selection?'selected':''} ${row.status==='ERLEDIGT'||row.status==='BEFREIT'?'done':''}"><span><strong>${escape(row.title)}</strong><small>${escape(row.label)}</small></span><b>${row.status}</b></button>`).join('');
       const row = this.rows[this.selection];
       this.text('map-destination',row?.title??'Alle Aufträge abgeschlossen'); this.text('map-objective',row?.description??'Die Insel wartet auf deinen nächsten Sprung.'); this.text('atlas-status',row?.status??'');
-      this.text('atlas-confirm',this.view==='travel'?'E · ZUM MARKTPLATZ REISEN':'E · ZIEL VERFOLGEN');
+      const unavailable = this.view === 'journal' && (row?.status === 'ERLEDIGT' || row?.status === 'GESPERRT');
+      (this.root.querySelector('#atlas-confirm') as HTMLButtonElement).disabled = unavailable;
+      this.text('atlas-confirm', unavailable ? row.status === 'ERLEDIGT' ? 'ABGESCHLOSSEN · RÜCKBLICK' : 'NOCH NICHT FREIGESCHALTET' : this.view==='travel'?'E · ZUM MARKTPLATZ REISEN':'E · ZIEL VERFOLGEN');
       if (this.focus) { this.root.querySelector('.atlas-row.selected')?.scrollIntoView({block:'nearest'}); this.focus = false; }
     }
   }

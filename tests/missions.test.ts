@@ -2,13 +2,13 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { MissionProgress, objectiveReached, type MissionActor } from '../src/missions/MissionProgress';
 import { missionDefinitions, traversalRoute, type MissionDefinition, type TraversalObjective } from '../src/data/missions';
-import { settlements, worldLocations } from '../src/data/world';
 import { bases } from '../src/data/bases';
 import { terrainHeight } from '../src/world/Terrain';
 import { worldConfig } from '../src/data/config';
 import { NullEngine } from '@babylonjs/core/Engines/nullEngine';
 import { Scene } from '@babylonjs/core/scene';
 import { MissionManager } from '../src/missions/MissionManager';
+import { screenplay, shotText } from '../src/story/Screenplay';
 
 const goal = (id: string, kind: TraversalObjective['kind'] = 'visit', x = 0): TraversalObjective => ({ id, title: id, description: id, position: [x, 1, 0], radius: 4, kind });
 const mission = (id: string, objectives: TraversalObjective[], extra: Partial<MissionDefinition> = {}): MissionDefinition => ({ id, title: id, description: id, category: 'Versorgung', reward: 100, objectives, ...extra });
@@ -90,47 +90,60 @@ test('campaign save resumes partial work, preserves completed rewards and resets
   assert.equal(restored.entries[0].status, 'complete', 'save must not share mutable records with live state');
 });
 
-test('legacy four-checkpoint saves migrate without regranting rewards', () => {
+test('legacy saves preserve training and side progress but start the new story without rewards', () => {
   const campaign = new MissionProgress(missionDefinitions); let reward = 0; campaign.onReward = value => reward += value;
   campaign.restore({ index: 2, elapsed: 42 });
+  assert.equal(campaign.tracked.id, 'story-01'); assert.equal(campaign.pendingScene, 'arrival');
+  campaign.finishScene('arrival'); campaign.setTracked('heights');
   assert.equal(campaign.objective!.id, traversalRoute[2].id); assert.equal(campaign.time, 42);
   campaign.restore({ index: 4, elapsed: 80 });
-  assert.equal(campaign.entries[0].status, 'complete'); assert.notEqual(campaign.tracked.id, 'heights'); assert.equal(reward, 0);
-  campaign.reset(); assert.equal(campaign.completedCount, 0); assert.equal(campaign.tracked.id, 'heights');
+  assert.equal(campaign.entries.find(e => e.definition.id === 'heights')!.status, 'complete');
+  assert.equal(reward, 0);
+  campaign.restore({ index: 4, elapsed: 80, trackedId: 'community-ventosa', records: {
+    heights: {step:4,elapsed:80,hold:0,complete:true},
+    'supply-ventosa': {step:1,elapsed:20,hold:0,complete:false},
+    'community-ventosa': {step:4,elapsed:50,hold:0,complete:true},
+  } });
+  assert.equal(campaign.tracked.id, 'story-01');
+  assert.equal(campaign.entries.find(e => e.definition.id === 'supply-ventosa')!.step, 1);
+  campaign.reset(); assert.equal(campaign.completedCount, 0); assert.equal(campaign.tracked.id, 'story-01');
 });
 
-test('authored campaign covers all settlements, bases and destinations with reachable land objectives', () => {
-  assert.equal(missionDefinitions.length, 52);
-  assert.equal(new Set(missionDefinitions.map(definition => definition.id)).size, missionDefinitions.length);
-  const objectives = missionDefinitions.flatMap(definition => definition.objectives);
-  assert.ok(objectives.length > 100);
-  assert.equal(new Set(objectives.map(objective => objective.id)).size, objectives.length);
+test('focused campaign has eight sequential chapters, optional diversions and reachable objectives', () => {
+  assert.equal(missionDefinitions.length, 13);
+  const chapters = missionDefinitions.filter(d => d.chapter);
+  assert.equal(chapters.length, 8);
+  chapters.forEach((d, i) => { assert.equal(d.chapter, i + 1); if (i) assert.deepEqual(d.requires, [chapters[i - 1].id]); });
+  assert.equal(new Set(missionDefinitions.map(d => d.id)).size, missionDefinitions.length);
+  const objectives = missionDefinitions.flatMap(d => d.objectives);
+  assert.equal(new Set(objectives.map(o => o.id)).size, objectives.length);
   for (const definition of missionDefinitions) {
     assert.ok(definition.objectives.length >= 2);
-    assert.ok(definition.requires?.every(id => missionDefinitions.some(item => item.id === id)) ?? true);
+    assert.ok(definition.requires?.every(id => missionDefinitions.some(d => d.id === id)) ?? true);
     for (const objective of definition.objectives) {
       assert.ok(objective.position.every(Number.isFinite));
       assert.ok(Math.abs(objective.position[0]) < worldConfig.size / 2 && Math.abs(objective.position[2]) < worldConfig.size / 2);
-      assert.ok(terrainHeight(objective.position[0], objective.position[2]) > 0.3, `${objective.id} must lie on land`);
-      if (definition.id !== 'heights') {
-        const harbor = worldLocations.some(place => place.kind === 'harbor' && place.position[0] === objective.position[0] && place.position[1] === objective.position[2]);
-        const surface = Math.max(terrainHeight(objective.position[0], objective.position[2]), harbor ? 4.5 : -Infinity);
-        assert.ok(Math.abs(objective.position[1] - surface - 1) < 0.01);
-      }
+      assert.ok(terrainHeight(objective.position[0], objective.position[2]) > 0.3, objective.id);
+      assert.ok(objective.position[1] >= terrainHeight(objective.position[0], objective.position[2]));
+      if (objective.baseId) assert.ok(bases.some(b => b.id === objective.baseId));
     }
   }
-  for (const town of settlements) {
-    assert.ok(missionDefinitions.some(definition => definition.id === `supply-${town.id}`));
-    assert.ok(missionDefinitions.some(definition => definition.id === `community-${town.id}`));
+  assert.equal(chapters.flatMap(d => d.objectives).filter(o => o.kind === 'liberate').length, 3, 'story does not require all ten bases');
+  const referencedScenes = chapters.flatMap(d => [d.introScene, ...d.objectives.map(o => o.scene)]).filter(Boolean);
+  assert.equal(new Set(referencedScenes).size, referencedScenes.length);
+  assert.deepEqual([...referencedScenes].sort(), screenplay.map(s => s.id).sort());
+  for (const scene of screenplay) {
+    assert.ok(scene.shots.length >= 3);
+    if (typeof scene.anchor === 'string') assert.ok(objectives.some(o => o.id === scene.anchor));
+    for (const shot of scene.shots) { assert.ok(shot.seconds >= 5); assert.ok(shot.text.length); }
   }
-  for (const base of bases) assert.ok(objectives.some(objective => objective.baseId === base.id));
-  for (const place of worldLocations) assert.ok(objectives.some(objective => objective.position[0] === place.position[0] && objective.position[2] === place.position[1]), place.id);
 });
 
 test('all authored missions can complete in order with no prerequisite deadlocks or duplicate rewards', () => {
   const campaign = new MissionProgress(missionDefinitions); let reward = 0, ticks = 0;
   campaign.onReward = value => reward += value;
   while (!campaign.complete && ticks++ < 500) {
+    if (campaign.pendingScene) { campaign.finishScene(campaign.pendingScene, 'shield'); continue; }
     const objective = campaign.objective; assert.ok(objective, `missing objective for ${campaign.tracked.id}`);
     const player = at(objective);
     if (objective.kind === 'interact') assert.equal(campaign.interact(player), true);
@@ -147,6 +160,7 @@ test('all authored missions can complete in order with no prerequisite deadlocks
 test('mission scene objects construct, switch and reset without rendering', () => {
   const engine = new NullEngine(), scene = new Scene(engine);
   const missions = new MissionManager(scene);
+  missions.finishScene('arrival');
   assert.ok(scene.getMeshByName('mission-target-ring'));
   assert.equal(missions.setTracked('supply-ventosa'), true);
   assert.equal(scene.getMeshByName('mission-cargo')!.isEnabled(), true);
@@ -155,7 +169,53 @@ test('mission scene objects construct, switch and reset without rendering', () =
   assert.equal(missions.interact(at(pickup)), true);
   assert.equal(scene.getMeshByName('mission-cargo')!.isEnabled(), false);
   const saved = missions.saveState(); missions.reset(); missions.restore(saved);
-  assert.equal(missions.tracked.id, 'supply-ventosa'); assert.equal(missions.entries[1].step, 1);
-  missions.reset(); assert.equal(missions.tracked.id, 'heights');
+  assert.equal(missions.tracked.id, 'supply-ventosa'); assert.equal(missions.entries.find(e => e.definition.id === 'supply-ventosa')!.step, 1);
+  missions.reset(); assert.equal(missions.tracked.id, 'story-01');
   scene.dispose(); engine.dispose();
+});
+
+for (const choice of ['open', 'shield'] as const) test(`story plays through ${choice} ending without side missions and survives every checkpoint reload`, () => {
+  let campaign = new MissionProgress(missionDefinitions), rewards = 0, safety = 0;
+  const visited: string[] = [], scenes: string[] = [];
+  const bind = () => campaign.onReward = amount => rewards += amount; bind();
+  while ((!campaign.storyComplete || campaign.pendingScene) && safety++ < 200) {
+    const saved = campaign.saveState();
+    const restored = new MissionProgress(missionDefinitions); restored.restore(saved); campaign = restored; bind();
+    if (campaign.pendingScene) {
+      const id = campaign.pendingScene; scenes.push(id);
+      const step = campaign.entries.find(e => e.definition.id === campaign.tracked.id)!.step;
+      const target = campaign.objective;
+      if (target) { campaign.update(999, at(target), {liberatedBaseIds:bases.map(b => b.id)}); assert.equal(campaign.interact(at(target)), false); }
+      assert.equal(campaign.entries.find(e => e.definition.id === campaign.tracked.id)!.step, step, 'cutscene pauses goals and timers');
+      if (id === 'decision') assert.equal(campaign.finishScene(id), false, 'skipping a film cannot silently select a moral choice');
+      assert.equal(campaign.finishScene('wrong-scene'), false);
+      assert.equal(campaign.finishScene(id, choice), true);
+      assert.equal(campaign.finishScene(id, choice), false, 'scene cannot commit twice');
+      continue;
+    }
+    assert.ok(campaign.tracked.chapter, 'must not auto-switch into side quests before epilogue');
+    const objective = campaign.objective!; visited.push(objective.id);
+    if (objective.kind === 'interact') assert.equal(campaign.interact(at(objective)), true);
+    else campaign.update(objective.holdSeconds ?? 1, at(objective), {liberatedBaseIds:bases.map(b => b.id)});
+  }
+  assert.ok(safety < 200); assert.equal(campaign.storyComplete, true); assert.equal(campaign.complete, false);
+  assert.equal(campaign.choice, choice); assert.equal(visited.includes('story-shield'), choice === 'shield');
+  assert.deepEqual(scenes, screenplay.map(s => s.id));
+  assert.equal(campaign.storyCompletedCount, 8);
+  assert.equal(rewards, missionDefinitions.filter(d => d.chapter).reduce((sum, d) => sum + d.reward, 0));
+  assert.equal(campaign.seen.length, screenplay.length);
+  const home = screenplay.find(s => s.id === 'home')!.shots[2];
+  assert.match(shotText(home, choice), choice === 'shield' ? /Alma/ : /Adressen/);
+});
+
+test('a pending decision and active optional timer round-trip without advancing time', () => {
+  const campaign = new MissionProgress(missionDefinitions); campaign.finishScene('arrival');
+  campaign.setTracked('timed-south-express'); campaign.interact(at(campaign.objective!));
+  const state = campaign.saveState(); state.story!.pending = ['decision'];
+  const restored = new MissionProgress(missionDefinitions); restored.restore(state);
+  const remaining = restored.timeRemaining;
+  restored.update(500, actor()); assert.equal(restored.timeRemaining, remaining);
+  assert.equal(restored.pendingScene, 'decision');
+  restored.finishScene('decision', 'shield'); assert.equal(restored.choice, 'shield');
+  restored.update(2, actor()); assert.equal(restored.timeRemaining, remaining! - 2);
 });

@@ -1,5 +1,19 @@
 # Prüfstand
 
+## 10. September 2026 – Storykampagne und Cutscenes
+
+92 automatisierte Tests bestanden. TypeScript-Prüfung und Vite-Produktionsbuild erfolgreich; die vorhandene Grössenwarnung des Babylon-Bundles bleibt bestehen.
+
+Die bisherigen 52 Aufträge wurden auf acht zusammenhängende Kapitel mit 22 definierten Hauptzielen und fünf erhaltene Nebenaufträge verdichtet. Beide Entscheidungen werden automatisch bis zum Epilog durchgespielt. Nach jedem Ziel und jeder Szene wird der Zustand gespeichert und in einer neuen Missionsinstanz wiederhergestellt. Geprüft sind die Reihenfolge der 13 Szenen, das zusätzliche Ziel der geschützten Veröffentlichung, einmalige Belohnungen, die Sperre von Interaktionen und Missionsuhren während Cutscenes, die explizite Entscheidung beim Überspringen und die frei spielbare Insel nach dem Finale. Alte Trainings- und Auftragsspielstände behalten passenden Fortschritt; die neue Geschichte beginnt unabhängig davon.
+
+Der Weltgeometrietest prüft auch die neuen Zielpositionen gegen die gebauten Kollisionskörper. Bestehende Bewegungs-, Flug-, Kampf-, Fahrzeug-, Bewohner-, Karten- und Speicherprüfungen bestehen weiterhin.
+
+Lokaler Chromium-/WebGL2-Browsercheck mit Playwright bei 1280 × 720: neues Spiel, Intro, Gespräch mit Mara, Einstellungswechsel, übersprungene Szenen, gespeicherte ausstehende Szene, geladenes Entscheidungs-Szenario, ESC/Weiter während der Auswahl, Tastaturentscheidung für das Original, Übertragung mit Wartephase, Rückkehr zu Mara, Epilog, Abschlussanzeige und Rückkehr ins freie Spiel. Kapiteljournal und Rückblicke visuell geprüft. Für die späten Kapitel wurde ein gespeicherter Szenariozustand aus der echten Missionslogik erzeugt; Ortswechsel wurden im Test gezielt gesetzt. Das ist kein vollständiger manuell gespielter Kampf- oder Flug-Durchlauf. Die zweite Variante ist vollständig durch die Logiktests abgedeckt; Audio wurde technisch angesteuert, nicht abgehört.
+
+Die visuellen Prüfungen fanden einen durch eine nicht initialisierte Displaytextur blockierten Spielstart und Bewohner, die mit den Gesprächsfiguren überlappten. Beides wurde korrigiert und anschliessend im Browser kontrolliert. Die verbleibende Browser-404 betrifft nur das schon zuvor fehlende favicon.ico. Ein während der Diagnose angefragter veralteter Vite-Abhängigkeitslink erzeugte einmalig einen 504; keine Anwendungsausnahme im geprüften Ablauf.
+
+Lokale, nicht versionierte Prüfbilder: `output/playwright/story-intro.png`, `story-home.png`, `story-decision.png`, `story-journal.png` und `story-ending.png`. Frühe Zwischenstände in demselben Ordner dokumentieren die anschliessend behobene Überschneidung der Figuren.
+
 ## 10. September 2026 – Kollisionsperformance und Gleiter
 
 88 automatisierte Tests bestanden; TypeScript und Vite-Produktionsbuild erfolgreich. Die bekannte Grössenwarnung des Babylon-Bundles bleibt bestehen.

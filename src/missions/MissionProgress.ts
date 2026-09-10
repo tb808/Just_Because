@@ -8,6 +8,7 @@ export interface MissionSaveState {
   elapsed: number;
   trackedId?: string;
   records?: Record<string, MissionRecord>;
+  story?: { seen: string[]; pending: string[]; choice?: 'open' | 'shield' };
 }
 export type MissionStatus = 'locked' | 'available' | 'active' | 'complete';
 export interface MissionEntry {
@@ -32,8 +33,12 @@ export class MissionProgress {
   private records = new Map<string, MissionRecord>();
   private trackedId: string;
   private lastActor?: MissionActor;
+  private seenScenes = new Set<string>();
+  private sceneQueue: string[] = [];
+  choice?: 'open' | 'shield';
   onAdvance: (message: string) => void = () => {};
   onReward: (score: number) => void = () => {};
+  onRadio: (line: { speaker: string; text: string }) => void = () => {};
 
   constructor(readonly definitions: readonly MissionDefinition[]) {
     if (!definitions.length) throw new Error('A campaign must contain at least one mission.');
@@ -41,6 +46,21 @@ export class MissionProgress {
     this.reset();
   }
   get tracked() { return this.definitions.find(definition => definition.id === this.trackedId)!; }
+  get pendingScene() { return this.sceneQueue[0]; }
+  get storyComplete() { return this.definitions.filter(d => d.chapter).every(d => this.records.get(d.id)!.complete); }
+  get storyCompletedCount() { return this.definitions.filter(d => d.chapter && this.records.get(d.id)!.complete).length; }
+  get seen() { return [...this.seenScenes]; }
+  finishScene(id: string, choice?: 'open' | 'shield') {
+    if (id !== this.pendingScene) return false;
+    if (id === 'decision' && !choice) return false;
+    if (id === 'decision') this.choice = choice;
+    this.sceneQueue.shift(); this.seenScenes.add(id); this.skipConditionalObjectives();
+    return true;
+  }
+  private queueScene(id?: string) { if (id && !this.seenScenes.has(id) && !this.sceneQueue.includes(id)) this.sceneQueue.push(id); }
+  private skipConditionalObjectives() {
+    while (this.objective?.whenChoice && this.objective.whenChoice !== this.choice) this.record.step++;
+  }
   private get record() { return this.records.get(this.trackedId)!; }
   get objective() { return this.record.complete ? undefined : this.tracked.objectives[this.record.step]; }
   get complete() { return this.definitions.every(definition => this.records.get(definition.id)!.complete); }
@@ -61,7 +81,7 @@ export class MissionProgress {
     return objective ? { position: objective.position, title: objective.title, kind: objective.kind ?? 'visit', missionId: this.trackedId } : undefined;
   }
   get interactionPrompt() {
-    return this.lastActor && !this.lastActor.dead && this.objective?.kind === 'interact'
+    return !this.pendingScene && this.lastActor && !this.lastActor.dead && this.objective?.kind === 'interact'
       && this.lastActor.state === 'ON_FOOT' && objectiveReached(this.objective, this.lastActor.position, this.lastActor.state)
       ? `E · ${this.objective.action ?? this.objective.title}` : undefined;
   }
@@ -85,6 +105,7 @@ export class MissionProgress {
     if (!definition || this.status(definition) === 'locked' || this.status(definition) === 'complete') return false;
     if (this.trackedId !== id) this.record.hold = 0;
     this.trackedId = id;
+    if (this.choice) this.skipConditionalObjectives();
     return true;
   }
   cycle() {
@@ -96,7 +117,7 @@ export class MissionProgress {
   }
   update(dt: number, actor: MissionActor, context: { liberatedBaseIds?: readonly string[] } = {}) {
     this.lastActor = actor;
-    if (actor.dead || !Number.isFinite(dt) || dt <= 0) return;
+    if (this.pendingScene || actor.dead || !Number.isFinite(dt) || dt <= 0) return;
     // Started deliveries keep their clock when another mission is tracked.
     let trackedFailed = false;
     for (const definition of this.definitions) {
@@ -125,26 +146,31 @@ export class MissionProgress {
   interact(actor: MissionActor, _liberatedBaseIds: readonly string[] = []) {
     this.lastActor = actor;
     const objective = this.objective;
-    if (actor.dead || actor.state !== 'ON_FOOT' || !objective || objective.kind !== 'interact'
+    if (this.pendingScene || actor.dead || actor.state !== 'ON_FOOT' || !objective || objective.kind !== 'interact'
       || this.status(this.tracked) === 'locked' || !objectiveReached(objective, actor.position, actor.state)) return false;
     this.advance(); return true;
   }
   private advance() {
     const definition = this.tracked, record = this.record;
     if (record.complete) return;
+    const finished = this.objective;
+    this.queueScene(finished?.scene);
+    if (finished?.radio) this.onRadio(finished.radio);
     record.step++; record.hold = 0;
     if (record.step >= definition.objectives.length) {
       record.complete = true;
       this.onReward(definition.reward);
       this.onAdvance(`${definition.title} abgeschlossen · +${definition.reward.toLocaleString('de-CH')} Punkte · ${this.completedCount}/${this.definitions.length} Aufträge`);
-      this.cycle();
+      const nextChapter = definition.chapter && this.definitions.find(d => d.chapter === definition.chapter! + 1);
+      if (!nextChapter || !this.setTracked(nextChapter.id)) this.cycle();
     } else this.onAdvance(`Ziel erreicht · ${definition.objectives[record.step].title}`);
   }
   saveState(): MissionSaveState {
-    const original = this.records.get(this.definitions[0].id)!;
+    const original = this.records.get('heights') ?? this.records.get(this.definitions[0].id)!;
     return {
       index: original.step, elapsed: original.elapsed, trackedId: this.trackedId,
       records: Object.fromEntries([...this.records].map(([id, record]) => [id, { ...record }])),
+      story: { seen: [...this.seenScenes], pending: [...this.sceneQueue], choice: this.choice },
     };
   }
   restore(state: MissionSaveState) {
@@ -162,18 +188,29 @@ export class MissionProgress {
         });
       }
     } else {
-      const first = this.definitions[0];
+      const first = this.definitions.find(d => d.id === 'heights') ?? this.definitions[0];
       const step = Math.floor(safeNumber(state.index, first.objectives.length));
       this.records.set(first.id, { step, elapsed: safeNumber(state.elapsed), hold: 0, complete: step === first.objectives.length });
     }
-    if (!state.trackedId || !this.setTracked(state.trackedId) || this.record.complete) {
+    const scenes = new Set(this.definitions.flatMap(d => [d.introScene, ...d.objectives.map(o => o.scene)]).filter((id): id is string => !!id));
+    if (state.story) {
+      this.seenScenes = new Set(state.story.seen.filter(id => scenes.has(id)));
+      this.sceneQueue = [...new Set(state.story.pending.filter(id => scenes.has(id) && !this.seenScenes.has(id)))];
+      this.choice = state.story.choice;
+    }
+    // Old saves keep world/combat and retained side quests, but begin the new narrative at chapter one.
+    const tracked = !state.story && this.definitions.some(d => d.chapter) ? this.definitions[0].id : state.trackedId;
+    if (!tracked || !this.setTracked(tracked) || this.record.complete) {
       const next = this.definitions.find(definition => !this.records.get(definition.id)!.complete && this.status(definition) !== 'locked');
       if (next) this.trackedId = next.id;
     }
+    if (this.choice) this.skipConditionalObjectives();
   }
   reset() {
     this.records.clear();
     this.definitions.forEach(definition => this.records.set(definition.id, freshRecord()));
     this.trackedId = this.definitions[0].id; this.lastActor = undefined;
+    this.seenScenes.clear(); this.sceneQueue = []; this.choice = undefined;
+    this.queueScene(this.definitions[0].introScene);
   }
 }

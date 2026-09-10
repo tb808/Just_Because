@@ -26,12 +26,12 @@ export class HUD {
     this.root = document.getElementById('app')!;
     this.root.innerHTML = `
       <header class="topbar"><div class="brand"><span class="brand-symbol">↗</span><div>CALA VENTRA<small>FREIER FALL</small></div></div><div class="location">SÜDKÜSTE <i></i> SEKTOR 01<small>36° 12′ N &nbsp; 18° 04′ E · FIKTIVE REGION</small></div></header>
-      <aside class="mission"><div class="eyebrow"><span class="live-dot"></span> ERKUNDUNG</div><h2 id="mission-title">Die Höhenroute</h2><p id="mission-detail">Erkunde die Relaisstationen über der Bucht.</p><div class="mission-progress"><span id="mission-progress"></span></div><small id="mission-count">CALA VENTRA · TRAININGSREGION</small></aside>
+      <aside class="mission"><div class="eyebrow"><span class="live-dot"></span> ERKUNDUNG</div><h2 id="mission-title">Die tote Frequenz</h2><p id="mission-detail">Triff Mara am Küstenmarkt von Ventosa.</p><div class="mission-progress"><span id="mission-progress"></span></div><small id="mission-count">KAPITEL 01 / 08</small></aside>
       <div class="reticle" id="reticle"><span></span><b></b></div><div id="target-label" class="target-label"></div>
       <div class="hint" id="hint">WASD bewegen · Maus umsehen</div>
       <footer class="bottom"><div class="identity"><span class="eyebrow">NIKA SERRIN</span><strong id="state">ZU FUSS</strong><div class="health-line"></div><small id="altitude">0 M Ü. M.</small></div><div class="abilities"><div id="ability-grapple"><kbd>F</kbd><span>Greifhaken</span></div><div id="ability-wingsuit"><kbd>C</kbd><span>Wingsuit</span></div><div id="ability-parachute"><kbd>Q</kbd><span>Fallschirm</span></div></div><div class="telemetry"><strong id="speed">000</strong><span>KM/H</span><small id="metrics">WEBGL · INITIALISIERUNG</small></div></footer>
       <div class="pause-shade" id="shade"></div><section class="menu" id="menu" role="dialog" aria-modal="true" aria-labelledby="menu-title">
-        <span class="eyebrow">CALA VENTRA / OFFENE INSEL</span><h1 id="menu-title">Eine Insel.<br>Tausend Wege.</h1><p>Durch lebendige Altstädte. Über weite Täler.<br>Entdecke acht Orte und befreie die Insel.</p>
+        <span class="eyebrow">CALA VENTRA / FREIER FALL</span><h1 id="menu-title">Jede Stimme<br>hinterlässt Spuren.</h1><p>Dein Bruder ist verschwunden. Das Netz, das du gebaut hast, hört die Insel ab. Kehre zurück und finde heraus, was ihr beide verschwiegen habt.</p><div class="story-menu-note">8 KAPITEL <i>·</i> EINE ENTSCHEIDUNG <i>·</i> DEINE INSEL</div>
         <div class="menu-actions"><button class="primary" id="start" disabled>INSEL WIRD GELADEN … <span>↗</span></button><button class="secondary new-game" id="new-game" disabled>NEUES SPIEL</button></div><p id="loading" class="loading" role="status">Gelände vorbereiten …</p>
         <div class="controls"><div><kbd>W A S D</kbd><span>Bewegen / SUV fahren</span></div><div><kbd>SHIFT</kbd><span>Sprinten</span></div><div><kbd>SPACE</kbd><span>Springen / Seil lösen</span></div><div><kbd>F / C / Q</kbd><span>Haken / Wingsuit / Schirm</span></div><div><kbd>MAUS</kbd><span>Kamera · Mausrad für Zoom</span></div><div><kbd>ESC</kbd><span>Pause</span></div></div>
         <details><summary>Einstellungen & Credits</summary><label>Schwierigkeit<select id="difficulty"><option value="easy">Leicht</option><option value="medium" selected>Mittel</option><option value="hard">Schwer</option></select></label><small class="difficulty-note">Beeinflusst Treffsicherheit, Schaden und Lebenspunkte der Gegner.</small><label>Mausempfindlichkeit<input id="sensitivity" type="range" min="0.0007" max="0.005" step="0.0001" value="0.0022"></label><label>Renderqualität<select id="quality"><option value="1">Hoch</option><option value="1.25" selected>Ausgewogen</option><option value="1.6">Performance</option></select></label><p>3D-Modelle: Kenney · CC0<br>Eigene Welt und Traversal-Strukturen.<br>Movement-Prototyp: Kampf und Fahrzeuge folgen.</p><button id="reset" class="secondary">Zurück zum Startpunkt</button></details>
@@ -47,7 +47,8 @@ export class HUD {
     controls.insertAdjacentHTML('beforeend','<div><kbd>T</kbd><span>Reise zu entdeckten Orten</span></div><div><kbd>↑ ↓ · E</kbd><span>Im Atlas wählen / bestätigen</span></div>');
     this.root.querySelector('.location')!.innerHTML = '<span id="location-name">VENTOSA</span><small id="location-detail">KÜSTENMARKT · 08:30</small>';
     this.root.insertAdjacentHTML('beforeend','<div class="world-compass"><span>W</span><b id="world-heading">NORDOST</b><span>O</span></div>');
-    this.root.querySelector('.mission .eyebrow')!.innerHTML = '<span class="live-dot"></span> EINSATZ';
+    this.root.querySelector('.mission .eyebrow')!.innerHTML = '<span class="live-dot"></span> <span id="mission-chapter">I · DIE RÜCKKEHR</span>';
+    this.root.insertAdjacentHTML('beforeend', '<aside class="story-radio" hidden aria-live="polite"><span>FUNK / VELA</span><strong></strong><p></p></aside><aside class="story-complete" hidden><span>GESCHICHTE ABGESCHLOSSEN</span><h2>Morgen bleibt jemand hier.</h2><p></p><small>Die Insel bleibt offen · M Journal · TAB Atlas</small></aside>');
     this.panel = this.element('menu'); this.start = this.element('start') as HTMLButtonElement; this.newGame = this.element('new-game') as HTMLButtonElement;
     this.status = this.element('loading'); this.state = this.element('state'); this.speed = this.element('speed');
     this.altitude = this.element('altitude'); this.metrics = this.element('metrics'); this.hint = this.element('hint');
@@ -78,6 +79,20 @@ export class HUD {
   }
   error(message: string) { this.status.textContent = message; this.status.classList.add('error'); }
   private toastTimer?: ReturnType<typeof setTimeout>;
+  private radioTimer?: ReturnType<typeof setTimeout>;
+  private endingTimer?: ReturnType<typeof setTimeout>;
+  radio(speaker: string, text: string) {
+    const panel = this.root.querySelector<HTMLElement>('.story-radio')!;
+    panel.querySelector('strong')!.textContent = speaker; panel.querySelector('p')!.textContent = text;
+    panel.hidden = false; clearTimeout(this.radioTimer);
+    this.radioTimer = setTimeout(() => panel.hidden = true, Math.max(7000, text.length * 65));
+  }
+  storyEnding(choice?: 'open' | 'shield') {
+    const panel = this.root.querySelector<HTMLElement>('.story-complete')!;
+    panel.querySelector('p')!.textContent = choice === 'shield' ? 'Die Wahrheit ist öffentlich. Die Zeugen bleiben geschützt. Und Nika bleibt in Ventosa.' : 'Das Original ist öffentlich. Mara hilft den betroffenen Familien. Und Nika bleibt in Ventosa.';
+    panel.hidden = false; clearTimeout(this.endingTimer);
+    this.endingTimer = setTimeout(() => panel.hidden = true, 14000);
+  }
   notify(text: string) {
     clearTimeout(this.toastTimer); const toast = this.element('toast'); toast.textContent = text; toast.classList.add('visible');
     this.toastTimer = setTimeout(() => toast.classList.remove('visible'), 5000);

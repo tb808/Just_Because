@@ -50,3 +50,12 @@ test('expanded campaign and discovered towns are optional, validated save fields
   assert.equal(isGameSave({ ...campaign, combat: { ...campaign.combat, difficulty: 'nightmare' } }), false);
   assert.equal(isGameSave({ ...campaign, combat: { ...campaign.combat, difficulty: 'hard' } }), true);
 });
+
+test('cutscene queues and the broadcast decision are validated optional save fields', () => {
+  const withStory = (story: unknown) => ({ ...valid, missions: { ...valid.missions, story } });
+  assert.equal(isGameSave(withStory({seen:['arrival'],pending:['mara'],choice:'shield'})), true);
+  assert.equal(isGameSave(withStory({seen:[],pending:[]})), true);
+  for (const invalid of [null, {seen:[],pending:[12]}, {seen:'arrival',pending:[]}, {seen:[],pending:[],choice:'unknown'}]) {
+    assert.equal(isGameSave(withStory(invalid)), false);
+  }
+});

@@ -49,6 +49,8 @@ export function isGameSave(value: unknown): value is GameSave {
     && Array.isArray(save.player) && save.player.length === 3 && save.player.every(finite)
     && !!missions && finite(missions.index) && finite(missions.elapsed)
     && (missions.trackedId === undefined || typeof missions.trackedId === 'string')
+    && (missions.story === undefined || !!missions.story && stringArray(missions.story.seen) && stringArray(missions.story.pending)
+      && (missions.story.choice === undefined || missions.story.choice === 'open' || missions.story.choice === 'shield'))
     && (missions.records === undefined || !!missions.records && typeof missions.records === 'object' && !Array.isArray(missions.records)
       && Object.values(missions.records).every(missionRecordValid))
     && (save.world === undefined || !!save.world && stringArray(save.world.discoveredSettlementIds)

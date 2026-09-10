@@ -2,6 +2,7 @@ export const bindings = {
   forward: 'KeyW', back: 'KeyS', left: 'KeyA', right: 'KeyD',
   sprint: 'ShiftLeft', jump: 'Space', grapple: 'KeyF', parachute: 'KeyQ',
   wingsuit: 'KeyC', interact: 'KeyE', unstuck: 'KeyU', reset: 'Backspace', reload: 'KeyR', rifle: 'Digit1', launcher: 'Digit2', mission: 'KeyM', fire: 'KeyJ',
+  storySkip: 'Enter',
   lookLeft: 'ArrowLeft', lookRight: 'ArrowRight', lookUp: 'ArrowUp', lookDown: 'ArrowDown', nextBase: 'KeyN', map: 'Tab', travel: 'KeyT', nextMission: 'KeyB',
 } as const;
 type Action = keyof typeof bindings;
