@@ -85,3 +85,9 @@ Die Autos sind Umgebungsverkehr und noch nicht vom Spieler fahrbar. Bewohner nut
 - Eigene Stadt-, Landschafts- und Umgebungsgeometrie entsteht direkt im Spiel; zusätzliche Downloads sind nicht erforderlich.
 
 Die vorhandenen GLBs liegen in `public/assets`. Zum reproduzierbaren Neuimport dienen `scripts/download-assets.mjs` und `scripts/prepare-assets.mjs`; Provenienz und Lizenzen liegen in `public/assets/licenses`.
+
+## Lizenz
+
+Der Quellcode dieses Projekts steht unter der [MIT-Lizenz](LICENSE). Copyright © 2026 Tyler Blumenstein.
+
+Die Lizenzen und Urheberhinweise der eingebundenen Drittanbieter-Assets sind separat in [CREDITS.md](CREDITS.md) und `public/assets/licenses/` dokumentiert.
