@@ -1,5 +1,15 @@
 # Prüfstand
 
+## 10. September 2026 – Kollisionsperformance und Gleiter
+
+88 automatisierte Tests bestanden; TypeScript und Vite-Produktionsbuild erfolgreich. Die bekannte Grössenwarnung des Babylon-Bundles bleibt bestehen.
+
+Die Kollisionssuche indiziert unveränderliche Terrain- und Bezirksgeometrie in 64-Meter-Zellen. Kamera, Bodenkontakt, Greifhaken, Wachen und SUV verwenden diese Vorauswahl; bewegliche Collider werden weiterhin mit aktuellen Transformationen geprüft. Kollisions-Sweeps berücksichtigen den gesamten Weg und das Körpervolumen, auch beim Gleiten an Wänden. Deaktivierte und zerstörte Objekte werden ausgeschlossen. Zusätzliche automatische Mausabfragen und der vollständige Szene-Bereitschaftsscan beim Speichern entfallen.
+
+CPU-Messung mit Babylon NullEngine, gebauter Welt und vereinfachten Asset-Modellen: 7.312 Meshes insgesamt, 207 lokale Kandidaten am Startpunkt. Nach Aufwärmen dauerten 480 identische Strahlabfragen 792,7 ms mit dem Szenenscan und 202,1 ms mit dem Index (rund 3,9-mal schneller). Treffer wurden an Marktpositionen aller zwölf Städte gegen die ursprüngliche Suche verglichen. Das ist eine Messung der Kollisionsabfragen, keine Aussage über GPU-Framerate oder Browser-FPS. Kein visueller Browserlauf ausgeführt.
+
+Der Wingsuit füllt seine Mindestgeschwindigkeit nicht mehr künstlich auf. Steigen bezahlt die tatsächlich gewonnene Höhe aus Bewegungsenergie; Luftwiderstand baut Energie ab, bei niedrigem Tempo sinkt der Auftrieb. Kurzes Hochziehen nach einem Sturzflug bleibt möglich. Jeweils 60 Sekunden dauernde Simulationen bei 30/60/120/144 Hz prüfen dauerhaftes Hochziehen und wechselndes Tauchen/Hochziehen aus 0/5/17/40 m/s: keine zusätzliche Gesamtenergie und kein dauerhafter Höhengewinn. Kamerakollision, dünne Wände, Zellgrenzen, bewegte/entfernte Collider, Greifhaken sowie bestehende Spieltests bestehen.
+
 ## 9. September 2026 – vier neue Städte und vier Basen
 
 83 automatisierte Codetests bestanden; TypeScript und Vite-Produktionsbuild erfolgreich. Kein Browser, Screenshot oder visueller Test ausgeführt. Die bekannte Grössenwarnung des Babylon-Bundles bleibt bestehen.

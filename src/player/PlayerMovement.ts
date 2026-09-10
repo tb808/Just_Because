@@ -9,6 +9,7 @@ import { GrapplingHook } from '../abilities/GrapplingHook';
 import { Wingsuit } from '../abilities/Wingsuit';
 import { Parachute } from '../abilities/Parachute';
 import { transition, type PlayerState } from './PlayerState';
+import { moveWithWorldCollisions, pickCollision } from '../world/CollisionQueries';
 
 export class PlayerMovement {
   private coyote = 0;
@@ -42,10 +43,10 @@ export class PlayerMovement {
     const boundary = worldConfig.size / 2 - 12;
     if (this.input.take('unstuck')) { this.unstuck(); return; }
     if (this.input.take('reset') || p.position.y < -4 || Math.abs(p.position.x) > boundary || Math.abs(p.position.z) > boundary) { this.reset(); return; }
-    const ground = this.scene.pickWithRay(new Ray(p.position, Vector3.Down(), 1.05), m => m.checkCollisions && m !== p.body);
+    const ground = pickCollision(this.scene, new Ray(p.position, Vector3.Down(), 1.05), p.body);
     const grounded = !!ground?.hit && v.y <= 0.1;
     this.coyote = grounded ? movement.coyoteTime : Math.max(0, this.coyote - dt);
-    if (grounded && p.state !== 'GRAPPLING') this.setState(transition(p.state, 'land'));
+    if (grounded && p.state !== 'GRAPPLING' && p.state !== 'ON_FOOT') this.setState(transition(p.state, 'land'));
     else if (!grounded && p.state === 'ON_FOOT') p.state = 'FALLING';
     if (this.input.take('grapple')) {
       if (p.state === 'GRAPPLING') this.setState(transition(p.state, 'release'));
@@ -72,7 +73,7 @@ export class PlayerMovement {
     // Several simulation ticks share one render ID. Force the world transform so
     // Babylon's collision sweep starts at this tick's position, not the last frame.
     p.body.computeWorldMatrix(true);
-    p.body.moveWithCollisions(displacement);
+    moveWithWorldCollisions(p.body, displacement);
     const actualHorizontal = Math.hypot(p.position.x - before.x, p.position.z - before.z);
     const actualDistance = Vector3.Distance(p.position, before);
     if (v.y > 0 && p.position.y - before.y < v.y * dt * 0.2) v.y = 0;
@@ -103,7 +104,7 @@ export class PlayerMovement {
     const origin = this.player.position.clone(); let freedom = 0;
     for (const direction of [Vector3.Right(), Vector3.Left(), Vector3.Forward(), Vector3.Backward()]) {
       this.player.position.copyFrom(origin); this.player.body.computeWorldMatrix(true);
-      this.player.body.moveWithCollisions(direction.scale(0.45));
+      moveWithWorldCollisions(this.player.body, direction.scale(0.45));
       freedom = Math.max(freedom, Math.hypot(this.player.position.x - origin.x, this.player.position.z - origin.z));
     }
     this.player.position.copyFrom(origin); this.player.body.computeWorldMatrix(true);

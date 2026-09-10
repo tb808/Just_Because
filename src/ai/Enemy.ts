@@ -18,6 +18,7 @@ import { CombatEffects } from '../combat/CombatEffects';
 import { CombatAudio } from '../combat/CombatAudio';
 import { Player } from '../player/Player';
 import { chooseAvoidanceHeading, searchOffset } from './EnemyNavigation';
+import { moveWithWorldCollisions, pickCollision } from '../world/CollisionQueries';
 
 export class Enemy {
   readonly health: HealthComponent;
@@ -95,7 +96,7 @@ export class Enemy {
       if (this.visible) {
         const eye = this.body.position.add(new Vector3(0, 0.6, 0));
         const rayDirection = this.player.position.subtract(eye);
-        const hit = this.scene.pickWithRay(new Ray(eye, rayDirection.normalizeToNew(), rayDirection.length()), m => m.checkCollisions);
+        const hit = pickCollision(this.scene, new Ray(eye, rayDirection.normalizeToNew(), rayDirection.length()));
         if (hit?.hit && hit.distance < rayDirection.length() - 0.5) this.visible = false;
       }
       if (this.visible) { this.lastSeen.copyFrom(this.player.position); this.memory = enemyConfig.searchDuration; this.state = 'COMBAT'; this.searchTime=0; }
@@ -126,7 +127,7 @@ export class Enemy {
         this.avoidanceTime=.22;
         const heading=chooseAvoidanceHeading(direction, candidate=>{
           const ray=new Ray(this.body.position.add(new Vector3(0,-.15,0)),new Vector3(candidate.x,0,candidate.z),4);
-          const hit=this.scene.pickWithRay(ray,mesh=>mesh!==this.body&&mesh.checkCollisions&&mesh.isEnabled());
+          const hit=pickCollision(this.scene,ray,this.body);
           return hit?.hit?Math.max(0,hit.distance-.6):4;
         },this.avoidanceSide);
         this.avoidanceDirection.set(heading.x,0,heading.z);
@@ -142,7 +143,7 @@ export class Enemy {
     }
     const previousX=this.body.position.x,previousZ=this.body.position.z;
     this.body.computeWorldMatrix(true);
-    this.body.moveWithCollisions(new Vector3(moving && !this.hitTime ? direction.x * enemyConfig.speed * dt : 0, -4 * dt, moving && !this.hitTime ? direction.z * enemyConfig.speed * dt : 0));
+    moveWithWorldCollisions(this.body, new Vector3(moving && !this.hitTime ? direction.x * enemyConfig.speed * dt : 0, -4 * dt, moving && !this.hitTime ? direction.z * enemyConfig.speed * dt : 0));
     const moved=Math.hypot(this.body.position.x-previousX,this.body.position.z-previousZ);
     if(wantsToMove&&!this.hitTime&&moved<enemyConfig.speed*dt*.08) this.stuckTime+=dt; else this.stuckTime=0;
     if(this.stuckTime>=2.5) this.recoverFromStuck();

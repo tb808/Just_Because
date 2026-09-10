@@ -7,13 +7,14 @@ import { Player } from '../player/Player';
 import { movement } from '../data/config';
 
 export function glideVelocity(v: { x: number; y: number; z: number }, yaw: number, pitch: number, dt: number) {
+  if (dt <= 0) return;
   // Camera pitch is the pilot's requested attitude. A small negative trim keeps a
   // neutral wingsuit in a sustainable glide instead of flying level for free.
   const requestedPitch = Math.max(-0.78, Math.min(0.4, pitch - 0.08));
   const oldSpeed = Math.hypot(v.x, v.y, v.z);
-  const speed = Math.max(movement.wingsuitMinSpeed, oldSpeed);
+  const speed = oldSpeed;
   const horizontal = Math.hypot(v.x, v.z);
-  const flightPitch = oldSpeed > 0.01 ? Math.atan2(v.y, horizontal) : requestedPitch;
+  const flightPitch = oldSpeed > 0.01 ? Math.atan2(v.y, horizontal) : -Math.PI / 2;
 
   // Gravity accelerates a dive and consumes airspeed during a climb. Parasite
   // drag rises quadratically, so neither a long dive nor level flight can create
@@ -21,12 +22,12 @@ export function glideVelocity(v: { x: number; y: number; z: number }, yaw: numbe
   const parasiteDrag = 0.55 + 0.0085 * (speed - 27) ** 2;
   const angleOfAttack = Math.abs(requestedPitch - flightPitch);
   const controlDrag = Math.max(0, angleOfAttack - 0.18) * 2.4;
-  const nextSpeed = Math.max(8, Math.min(movement.wingsuitMaxSpeed,
+  const estimatedSpeed = Math.max(0, Math.min(movement.wingsuitMaxSpeed,
     speed + (-movement.gravity * Math.sin(flightPitch) - parasiteDrag - controlDrag) * dt));
 
   // Below the configured flying speed the suit progressively loses lift and the
   // nose drops. Diving restores airflow and therefore control authority.
-  const lift = Math.max(0, Math.min(1, (nextSpeed - 8) / (movement.wingsuitMinSpeed - 8)));
+  const lift = Math.max(0, Math.min(1, (estimatedSpeed - 8) / (movement.wingsuitMinSpeed - 8)));
   const controlledPitch = -0.48 + (requestedPitch + 0.48) * lift;
   const targetX = Math.sin(yaw) * Math.cos(controlledPitch);
   const targetY = Math.sin(controlledPitch);
@@ -39,6 +40,13 @@ export function glideVelocity(v: { x: number; y: number; z: number }, yaw: numbe
   dirY += (targetY - dirY) * steering;
   dirZ += (targetZ - dirZ) * steering;
   const length = Math.hypot(dirX, dirY, dirZ) || 1;
+  // Pay for the height actually gained after steering, not the previous attitude.
+  // With position += velocity * dt this preserves kinetic + potential energy
+  // minus drag, including stalls and repeated dive/pull-up cycles.
+  const remainingEnergy = Math.max(0, speed * speed - 2 * (parasiteDrag + controlDrag) * speed * dt);
+  const climbCost = movement.gravity * dt * dirY / length;
+  const nextSpeed = Math.min(movement.wingsuitMaxSpeed,
+    Math.max(0, Math.sqrt(climbCost * climbCost + remainingEnergy) - climbCost));
   v.x = dirX / length * nextSpeed;
   v.y = dirY / length * nextSpeed;
   v.z = dirZ / length * nextSpeed;

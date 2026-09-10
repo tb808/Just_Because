@@ -20,6 +20,7 @@ import { settlements } from '../data/world';
 import { baseCapturePrompt } from '../ui/BaseCapturePrompt';
 import { difficultyLabels } from '../data/difficulty';
 import { VehicleManager } from '../vehicles/VehicleManager';
+import { CollisionQueries } from '../world/CollisionQueries';
 
 export class Game {
   private engine: Engine;
@@ -51,6 +52,8 @@ export class Game {
     // Gameplay performs its own explicit raycasts; Babylon's implicit pointer-move
     // picking would otherwise scan the scene throughout mouse-look.
     this.scene.skipPointerMovePicking = true;
+    this.scene.skipPointerDownPicking = true;
+    this.scene.skipPointerUpPicking = true;
     this.input = new InputManager(canvas); this.assetManager = new AssetManager(this.scene);
     this.player = new Player(this.scene); this.world = new WorldManager(this.scene, this.assetManager);
     this.camera = new ThirdPersonCamera(this.scene, this.player, this.input);
@@ -98,6 +101,7 @@ export class Game {
   async init() {
     await Promise.all([this.world.create(), this.player.load(this.assetManager)]);
     await this.combat.load(this.assetManager);
+    new CollisionQueries(this.scene);
     this.atmosphere = new Atmosphere(this.scene);
     const save = loadGameSave();
     const validPosition = save && validSavedPosition(save.player);
@@ -195,7 +199,7 @@ export class Game {
     this.hud.notify(`Ankunft in ${settlements.find(place=>place.id===id)?.name} · Marktplatz`);
   }
   private saveGame() {
-    if (!this.ready || !this.scene.isReady() || this.player.dead) return;
+    if (!this.ready || this.player.dead) return;
     const position = this.player.position.asArray() as [number, number, number];
     const save: GameSave = { version: 1, savedAt: Date.now(), player: position, missions: this.missions.saveState(), combat: this.combat.saveState(), world: {discoveredSettlementIds:[...this.exploration.discovered],surveyedMapCells:[...this.exploration.surveyed],elapsed:this.atmosphere?.elapsed??0} };
     storeGameSave(save);

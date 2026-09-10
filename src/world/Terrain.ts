@@ -95,5 +95,6 @@ function createTile(scene: Scene, material: StandardMaterial, tx: number, tz: nu
   const data = new VertexData(); Object.assign(data, { positions, indices, normals, colors });
   const mesh = new Mesh(`terrain-${tx}-${tz}`, scene); data.applyToMesh(mesh);
   mesh.checkCollisions = true; mesh.receiveShadows = true; mesh.material = material;
+  mesh.metadata = { collisionStatic: true };
   mesh.freezeWorldMatrix(); return mesh;
 }

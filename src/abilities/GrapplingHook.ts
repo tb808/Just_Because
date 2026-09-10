@@ -7,6 +7,7 @@ import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 import { type AbstractMesh } from '@babylonjs/core/Meshes/abstractMesh';
 import { ThirdPersonCamera } from '../camera/ThirdPersonCamera';
 import { movement } from '../data/config';
+import { pickCollision } from '../world/CollisionQueries';
 import { Player } from '../player/Player';
 
 export class GrapplingHook {
@@ -19,12 +20,12 @@ export class GrapplingHook {
     this.rope.color = Color3.FromHexString('#e6ffad'); this.rope.isPickable = false; this.rope.setEnabled(false);
   }
   target() {
-    const hit = this.scene.pickWithRay(this.camera.aimRay(movement.grappleRange + 15), m => m.checkCollisions && m !== this.player.body);
+    const hit = pickCollision(this.scene, this.camera.aimRay(movement.grappleRange + 15), this.player.body);
     if (!hit?.hit || !hit.pickedPoint || Vector3.Distance(hit.pickedPoint, this.player.position) > movement.grappleRange) return null;
     const direction = hit.pickedPoint.subtract(this.player.position), distance = direction.length();
     if (distance < 2) return null;
     // Camera sight alone must not permit firing through a wall next to the player.
-    const obstruction = this.scene.pickWithRay(new Ray(this.player.position, direction.normalize(), distance), m => m.checkCollisions && m !== this.player.body);
+    const obstruction = pickCollision(this.scene, new Ray(this.player.position, direction.normalize(), distance), this.player.body);
     if (obstruction?.hit && obstruction.distance < distance - 0.8) return null;
     return hit;
   }

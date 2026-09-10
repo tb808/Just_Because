@@ -11,9 +11,11 @@ import { settlements } from '../src/data/world';
 import { missionDefinitions } from '../src/data/missions';
 import { bases } from '../src/data/bases';
 import type { AssetManager } from '../src/core/AssetManager';
+import { Ray } from '@babylonjs/core/Culling/ray';
+import { CollisionQueries } from '../src/world/CollisionQueries';
 
 interface Bounds {minX:number;maxX:number;minZ:number;maxZ:number;minY:number;maxY:number}
-test('non-rendered world construction batches geometry and preserves navigable sidewalks',async()=>{
+test('non-rendered world construction batches geometry and preserves navigable sidewalks',async(t)=>{
   const engine=new NullEngine(),scene=new Scene(engine);
   const assetStub={instantiate:async(def:{height:number},name:string)=>{
     const root=new TransformNode(name,scene),mesh=MeshBuilder.CreateBox(`${name}-stub`,{width:2,height:def.height,depth:2},scene);
@@ -67,6 +69,27 @@ test('non-rendered world construction batches geometry and preserves navigable s
     world.chunks.update(1,new Vector3(1900,0,1900));world.chunks.update(1,world.spawn);
     assert.equal(tank.root.isEnabled(),false);assert.equal(tank.collider.isEnabled(),false);
     assert.ok(world.chunks.activeCount<world.chunks.totalCount,'distance culling must deactivate remote districts');
+    const queries = new CollisionQueries(scene);
+    const rays = settlements.flatMap(town => [
+      new Ray(new Vector3(town.market[0], town.elevation + 10, town.market[1]), Vector3.Down(), 20),
+      new Ray(new Vector3(town.market[0], town.elevation + 1, town.market[1]), Vector3.Forward(), 14),
+    ]);
+    for (const ray of rays) {
+      const expected = scene.pickWithRay(ray, mesh => mesh.checkCollisions && mesh.isEnabled()), actual = queries.pick(ray);
+      assert.equal(!!actual?.hit, !!expected?.hit);
+      if (expected?.hit) assert.ok(Math.abs(actual!.distance - expected.distance) < 1e-5);
+    }
+    const nearby = queries.candidates(world.spawn.x-15,world.spawn.x+15,world.spawn.z-15,world.spawn.z+15).length;
+    assert.ok(nearby < scene.meshes.length / 10, 'local queries must omit at least 90% of scene meshes');
+    const measure = (indexed: boolean) => {
+      const start = performance.now();
+      for (let i=0;i<20;i++) for (const ray of rays) {
+        if(indexed) queries.pick(ray); else scene.pickWithRay(ray, mesh=>mesh.checkCollisions&&mesh.isEnabled());
+      }
+      return performance.now()-start;
+    };
+    measure(false); measure(true);
+    t.diagnostic(`Collision benchmark: ${scene.meshes.length} meshes, ${nearby} local candidates; 480 rays scene=${measure(false).toFixed(1)}ms indexed=${measure(true).toFixed(1)}ms (NullEngine, not GPU FPS)`);
     tank.root.metadata.streamHidden=false;tank.collider.metadata.streamHidden=false;world.chunks.update(1,new Vector3(250,6,-150));
     assert.equal(tank.root.isEnabled(),true);
   } finally {scene.dispose();engine.dispose();}

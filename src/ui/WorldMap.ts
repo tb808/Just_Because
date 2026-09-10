@@ -188,5 +188,8 @@ export class WorldMap {
       if (this.focus) { this.root.querySelector('.atlas-row.selected')?.scrollIntoView({block:'nearest'}); this.focus = false; }
     }
   }
-  private text(id: string, value: string) { this.root.querySelector(`#${id}`)!.textContent = value; }
+  private text(id: string, value: string) {
+    const element = this.root.querySelector(`#${id}`)!;
+    if (element.textContent !== value) element.textContent = value;
+  }
 }

@@ -7,6 +7,7 @@ import type { Player } from '../player/Player';
 import { worldConfig } from '../data/config';
 import { terrainHeight } from '../world/Terrain';
 import type { WorldManager, WorldVehicle } from '../world/WorldManager';
+import { moveWithWorldCollisions, pickCollision } from '../world/CollisionQueries';
 
 export const carHandling = {maxSpeed:32,reverseSpeed:11,acceleration:15,braking:27,drag:5,steering:1.75} as const;
 
@@ -60,7 +61,7 @@ export class VehicleManager {
     const forward=new Vector3(Math.sin(vehicle.root.rotation.y),0,Math.cos(vehicle.root.rotation.y));
     const distance=this.speed*dt,before=vehicle.collider.position.clone();
     vehicle.collider.rotation.y=vehicle.root.rotation.y;vehicle.collider.computeWorldMatrix(true);
-    vehicle.collider.moveWithCollisions(forward.scale(distance));
+    moveWithWorldCollisions(vehicle.collider, forward.scale(distance));
     const moved=Math.hypot(vehicle.collider.position.x-before.x,vehicle.collider.position.z-before.z);
     const expected=Math.abs(distance);
     if(expected>.002&&moved<expected*.3)this.speed*=-.12;
@@ -101,9 +102,9 @@ export class VehicleManager {
     if(placePlayer) {
       const right=new Vector3(Math.cos(vehicle.root.rotation.y),0,-Math.sin(vehicle.root.rotation.y));
       const origin=vehicle.root.position.add(new Vector3(0,1.1,0));
-      const leftHit=this.scene.pickWithRay(new Ray(origin,right.scale(-1),3),mesh=>mesh.checkCollisions&&mesh!==vehicle.collider);
+      const leftHit=pickCollision(this.scene,new Ray(origin,right.scale(-1),3),vehicle.collider);
       const side=leftHit?.hit?right:right.scale(-1),candidate=vehicle.root.position.add(side.scale(2.8));
-      const ground=this.scene.pickWithRay(new Ray(new Vector3(candidate.x,vehicle.root.position.y+7,candidate.z),Vector3.Down(),20),mesh=>mesh.checkCollisions&&mesh!==vehicle.collider);
+      const ground=pickCollision(this.scene,new Ray(new Vector3(candidate.x,vehicle.root.position.y+7,candidate.z),Vector3.Down(),20),vehicle.collider);
       candidate.y=(ground?.pickedPoint?.y??terrainHeight(candidate.x,candidate.z))+.92;this.player.position.copyFrom(candidate);
       this.player.body.computeWorldMatrix(true);this.camera.update(0,true);
     }
@@ -138,7 +139,7 @@ export class VehicleManager {
 
   private surfaceHeight(x:number,z:number,current:number) {
     const start=Math.max(current+5,terrainHeight(x,z)+6);
-    const hit=this.scene.pickWithRay(new Ray(new Vector3(x,start,z),Vector3.Down(),18),mesh=>mesh.checkCollisions&&mesh!==this.active?.collider);
+    const hit=pickCollision(this.scene,new Ray(new Vector3(x,start,z),Vector3.Down(),18),this.active?.collider);
     return hit?.pickedPoint?.y??terrainHeight(x,z);
   }
 }

@@ -10,6 +10,7 @@ import { movement } from '../src/data/config';
 import { transition } from '../src/player/PlayerState';
 import { glideVelocity } from '../src/abilities/Wingsuit';
 import { parachuteVelocity } from '../src/abilities/Parachute';
+import { CollisionQueries } from '../src/world/CollisionQueries';
 
 function fixture() {
   const engine = new NullEngine(); const scene = new Scene(engine); scene.collisionsEnabled = true;
@@ -26,6 +27,7 @@ function fixture() {
   const camera = new ThirdPersonCamera(scene, player, input); camera.yaw = 0; camera.pitch = 0; camera.update(0, true);
   const controller = new PlayerMovement(player, input, camera, scene, new Vector3(0, 0.91, 0));
   scene.meshes.forEach(m => m.computeWorldMatrix(true));
+  new CollisionQueries(scene);
   const step = (seconds: number) => { for (let i = 0; i < Math.round(seconds / movement.fixedStep); i++) controller.update(movement.fixedStep); };
   return { engine, scene, held, pressed, player, camera, controller, step, dispose: () => { scene.dispose(); engine.dispose(); } };
 }
@@ -143,6 +145,22 @@ test('wingsuit dive stores speed that can be traded back for height', () => {
 test('parachute arrests a fast fall', () => {
   const fall = { x: 30, y: -60, z: 0 }; for (let i = 0; i < 240; i++) parachuteVelocity(fall, 0, 5, 1 / 120);
   assert.ok(Math.abs(fall.y + 3.5) < 0.01); assert.ok(Math.abs(fall.x) < 0.3);
+});
+
+test('holding climb or pumping the wingsuit cannot create energy at any simulation rate', () => {
+  for (const hz of [30, 60, 120, 144]) for (const initialSpeed of [0, 5, 17, 40]) for (const pumping of [false, true]) {
+    const v = { x: 0, y: 0, z: initialSpeed }; let altitude = 0;
+    let energy = initialSpeed ** 2 / 2;
+    for (let i = 0; i < hz * 60; i++) {
+      const pitch = pumping && Math.floor(i / hz) % 4 < 2 ? -.78 : .85;
+      glideVelocity(v, Math.sin(i / hz) * .5, pitch, 1 / hz);
+      altitude += v.y / hz;
+      const nextEnergy = (v.x ** 2 + v.y ** 2 + v.z ** 2) / 2 + movement.gravity * altitude;
+      assert.ok(Number.isFinite(nextEnergy) && nextEnergy <= energy + 1e-7, `free energy at ${hz} Hz, speed ${initialSpeed}`);
+      energy = nextEnergy;
+    }
+    assert.ok(altitude < -20, `sustained flight: ${altitude}`);
+  }
 });
 test('ground and vehicle states reject incompatible air activation', () => {
   assert.equal(transition('ON_FOOT', 'wingsuit'), 'ON_FOOT');

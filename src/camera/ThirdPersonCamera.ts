@@ -5,6 +5,7 @@ import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 import { cameraConfig } from '../data/config';
 import { InputManager } from '../core/InputManager';
 import { Player } from '../player/Player';
+import { pickCollision } from '../world/CollisionQueries';
 
 export class ThirdPersonCamera {
   readonly camera: FreeCamera;
@@ -58,7 +59,7 @@ export class ThirdPersonCamera {
     let safe = castLength;
     // Five parallel rays approximate a small camera volume, avoiding corner clipping.
     for (const shift of [Vector3.Zero(), right.scale(0.22), right.scale(-0.22), Vector3.Up().scale(0.2), Vector3.Down().scale(0.2)]) {
-      const hit = this.scene.pickWithRay(new Ray(target.add(shift), direction, castLength), mesh => mesh.checkCollisions && mesh !== this.player.body);
+      const hit = pickCollision(this.scene, new Ray(target.add(shift), direction, castLength), this.player.body);
       if (hit?.hit) safe = Math.min(safe, Math.max(0.35, hit.distance - 0.35));
     }
     this.camera.position.copyFrom(target.add(direction.scale(safe)));

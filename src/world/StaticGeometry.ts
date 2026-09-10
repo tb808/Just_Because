@@ -46,7 +46,7 @@ export class StaticGeometry {
       const data=new VertexData();Object.assign(data,{positions:batch.positions,indices:batch.indices,normals});
       const mesh=new Mesh(`district:${key}`,this.world.scene);data.applyToMesh(mesh);
       mesh.position.set(batch.x,0,batch.z);mesh.material=this.world.material(batch.color);mesh.checkCollisions=batch.collision;mesh.isPickable=batch.collision;mesh.receiveShadows=true;
-      mesh.metadata={worldStatic:true,decorative:!batch.collision,navigationObstacles:batch.obstacles};mesh.freezeWorldMatrix();this.world.chunks.add(mesh);meshes.push(mesh);
+      mesh.metadata={worldStatic:true,collisionStatic:true,decorative:!batch.collision,navigationObstacles:batch.obstacles};mesh.freezeWorldMatrix();this.world.chunks.add(mesh);meshes.push(mesh);
     }
     this.batches.clear();return meshes;
   }
