@@ -2,6 +2,7 @@ import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 import { settlements } from '../data/world';
 import { worldConfig } from '../data/config';
 import { terrainHeight } from './Terrain';
+import { townEdgeDistance } from '../data/townPlans';
 
 export const surveyCellSize = 120;
 export const surveyRadius = 250;
@@ -26,7 +27,7 @@ export class Exploration {
   update(position: Vector3) {
     this.reveal(position.x, position.z);
     for (const place of settlements) {
-      if (this.discovered.has(place.id) || Math.hypot(position.x - place.center[0], position.z - place.center[1]) > place.radius + 25) continue;
+      if (this.discovered.has(place.id) || townEdgeDistance(place,position.x,position.z)>25) continue;
       this.discovered.add(place.id); this.onDiscover(place.name);
     }
   }

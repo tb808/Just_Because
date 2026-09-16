@@ -14,6 +14,7 @@ import type { AssetManager } from '../src/core/AssetManager';
 import { Ray } from '@babylonjs/core/Culling/ray';
 import { CollisionQueries } from '../src/world/CollisionQueries';
 import { weaponMerchants } from '../src/world/WeaponMerchants';
+import { landscapeSites } from '../src/data/biomes';
 
 interface Bounds {minX:number;maxX:number;minZ:number;maxZ:number;minY:number;maxY:number}
 test('non-rendered world construction batches geometry and preserves navigable sidewalks',async(t)=>{
@@ -25,6 +26,11 @@ test('non-rendered world construction batches geometry and preserves navigable s
   const world=new WorldManager(scene,assetStub);
   try {
     await world.create();
+    const landscape=scene.metadata.landscape;
+    assert.deepEqual([...landscape.builtSites].sort(),landscapeSites.map(s=>s.id).sort(),'every named landscape site must have real geometry');
+    assert.ok(Object.values(landscape.counts).every(count=>Number(count)>30),'all seven biomes need populated scenery');
+    assert.ok(landscape.restStops>=12,'long roads need intervening rest points');
+    t.diagnostic(`Landscape: ${JSON.stringify(landscape.counts)}, ${landscape.builtSites.length} sites, ${landscape.restStops} roadside stops`);
     assert.equal(world.flags.size,10);assert.equal(world.supplies.length,10);assert.equal(world.destructibles.length,29);
     const batches=scene.meshes.filter(m=>m.name.startsWith('district:'));
     assert.ok(batches.length>100&&batches.length<4800,`district batches must stay bounded: ${batches.length}`);

@@ -8,6 +8,7 @@ import { worldConfig } from '../data/config';
 import { terrainHeight } from '../world/Terrain';
 import { territories, territoryAt, territoryForSettlement } from '../data/territories';
 import { weaponMerchants } from '../world/WeaponMerchants';
+import { biomeRegions, landscapeSites } from '../data/biomes';
 
 type AtlasView = 'world' | 'journal' | 'travel';
 const escape = (value: string) => value.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
@@ -85,6 +86,7 @@ export class WorldMap {
         <svg viewBox="${-half} ${-half} ${worldConfig.size} ${worldConfig.size}" role="img" aria-label="Topografische Inselkarte mit Orten, Strassen und aktuellem Ziel">
           <defs>
             <pattern id="sea-grid" width="256" height="256" patternUnits="userSpaceOnUse"><path d="M 256 0 H 0 V 256" fill="none" stroke="#b6d7d3" stroke-opacity=".08" stroke-width="3"/></pattern>
+            <clipPath id="biome-land-clip"><path d="${landPath}"/></clipPath>
             <mask id="exploration-mask" maskUnits="userSpaceOnUse" x="${-half}" y="${-half}" width="${worldConfig.size}" height="${worldConfig.size}"><rect x="${-half}" y="${-half}" width="${worldConfig.size}" height="${worldConfig.size}" fill="#000"/><path id="map-fog-reveal" fill="#fff"/></mask>
           </defs>
           <rect x="${-half}" y="${-half}" width="${worldConfig.size}" height="${worldConfig.size}" fill="url(#sea-grid)"/>
@@ -92,10 +94,12 @@ export class WorldMap {
           <g class="map-revealed" mask="url(#exploration-mask)">
             <path d="${landPath}" class="map-land"/>
             <path d="${terrainPath(35)}" class="map-height map-height-low"/><path d="${terrainPath(75)}" class="map-height map-height-mid"/><path d="${terrainPath(120)}" class="map-height map-height-high"/>
+            <g clip-path="url(#biome-land-clip)">${biomeRegions.map(b=>`<ellipse cx="${b.x}" cy="${-b.z}" rx="${b.rx*.8}" ry="${b.rz*.8}" fill="${b.soil}" opacity=".32"><title>${escape(b.name)}</title></ellipse>`).join('')}</g>
             ${territories.map(territory => `<path id="territory-${territory.baseId}" class="map-territory occupied" d="${territoryGeometry.paths[territory.baseId]}"/>`).join('')}
             <path d="${territoryGeometry.borders}" class="map-territory-border"/>
             <path d="${roads}" class="map-road"/>
             ${worldLocations.map(point => `<g class="map-poi" transform="translate(${point.position[0]},${-point.position[1]})"><circle r="14"/><title>${escape(point.name)}</title></g>`).join('')}
+            ${landscapeSites.map(point=>`<g class="map-poi" transform="translate(${point.position[0]},${-point.position[1]})"><path d="M0 -11L11 8H-11Z" fill="#ead9ad"/><title>${escape(point.name)}</title></g>`).join('')}
             ${settlements.map(place => `<g class="map-town occupied" id="town-${place.id}" data-territory="${territoryForSettlement(place.id)?.baseId ?? ''}" transform="translate(${place.center[0]},${-place.center[1]})"><rect x="-20" y="-20" width="40" height="40" rx="6"/><text x="31" y="-28">${escape(place.name)}</text></g>`).join('')}
             ${bases.map((base,i) => `<g class="map-base" id="map-${base.id}" transform="translate(${base.flag[0]},${-base.flag[2]})"><circle r="27"/><text class="base-number" text-anchor="middle" y="11">${i+1}</text><title>${escape(base.name)}</title></g>`).join('')}
             ${weaponMerchants.map(merchant => `<g class="map-merchant" transform="translate(${merchant.position[0]},${-merchant.position[2]})"><circle r="16"/><text text-anchor="middle" y="10">$</text><title>${escape(merchant.name)} · E vor dem östlichen Marktstand</title></g>`).join('')}

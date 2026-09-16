@@ -1,3 +1,11 @@
+## 16. September 2026 – Biome und unterschiedliche Stadtgrundrisse
+
+105 automatisierte Codetests bestanden, TypeScript und Vite-Produktionsbuild erfolgreich. Keine Browserprüfung, Screenshots oder visuellen Tests in diesem Arbeitsschritt. Die bekannte Warnung zum grossen Babylon-Chunk bleibt bestehen; die tatsächliche Darstellung und GPU-Performance sind nicht geprüft.
+
+Sieben Landschaftstypen teilen sich kontinuierliche Felder für Bodenfarben, Relief und Vegetation. Sechs Stadtgrundriss-Typen mit unterschiedlichen Ausmassen, Strassenabständen, versetzten Gassen, Gebäudehöhen und Bewohnerzahlen ersetzen das einheitliche Raster. Die kleinste Siedlung hat sechs Wohnhäuser, die grösste 139. Die neuen Grundrisse bleiben mit dem bestehenden regionalen Strassennetz verbunden. Die Salinenzufahrt wurde neu geführt und ihr Geländeübergang verbreitert, nachdem die Steigungsprüfung dort eine zu steile Passage gefunden hatte.
+
+Numerisch geprüft: Biome und Farbübergänge, unterschiedliche Siedlungsgrössen und Strassenmuster, reale Geometrie an allen 16 Landschaftsschauplätzen, 27 Rastplätze, Vegetation in jeder Region, Fahrbahnen über den tatsächlichen Geländedreiecken, zusammenhängende Strassen, freie Bewohnerwege, Missions- und Händlerzugänge sowie Wachenspawns. Alle vorhandenen Story-, Speicher-, Bewegungs-, Verkehrs- und Kampfprüfungen bestehen. Vorhandene lizenzierte Baum-, Palmen- und Fels-GLBs werden an ausgewählten Orten wiederverwendet; keine neuen externen Downloads.
+
 ## 16. September 2026 – Storyprogression und Waffenhandel
 
 Neues Spiel: Rost-9, 0 Credits, gesperrte Ausrüstung. Greifhaken nach Mara, Fallschirm nach dem ersten Relais, Gleiter nach Tomás in Kapitel 3. Erstes Story-Flugziel auf Fallschirm umgestellt; freiwilliges Wingsuit-Training an Kapitel 3 gebunden. Alle acht Kapitel werden in den Logiktests mit beiden Entscheidungen und Wiederladen an jedem Zwischenstand abgeschlossen. Kein vollständiger manueller Storydurchlauf.

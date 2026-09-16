@@ -47,7 +47,7 @@ export class LivingWorld {
   async load(manager: AssetManager) {
     this.indexObstacles();
     for (const town of settlements) {
-      const count = Math.min(26, Math.max(18, Math.ceil(town.population / 22)));
+      const count = Math.min(46,Math.max(8,Math.round(Math.sqrt(town.homes.length)*4)));
       for (let i = 0; i < count; i++) await this.addResident(manager, town.residentRoute, i / count, undefined, town);
       const [mx,mz]=town.market;
       const marketRoute: GroundPoint[]=[[mx-10,mz-8],[mx+10,mz-8],[mx+10,mz+8],[mx-10,mz+8]];

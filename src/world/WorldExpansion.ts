@@ -1,9 +1,11 @@
 import { buildRoadNetwork } from './RoadNetwork';
 import { frontierHome, frontierLandmark } from './FrontierArchitecture';
+import { buildBiomeLandscape } from './BiomeLandscape';
+import { townStreetRange } from '../data/townPlans';
 import { roadLift } from './RoadSurface';
 import { bases } from '../data/bases';
 import { assets } from '../data/assets';
-import { distanceToRoad, settlements, worldLocations, worldRoads, type GroundPoint, type SettlementDefinition, type WorldLocation } from '../data/world';
+import { distanceToRoad, settlements, worldLocations, type GroundPoint, type SettlementDefinition, type WorldLocation } from '../data/world';
 import { terrainHeight } from './Terrain';
 import { StaticGeometry } from './StaticGeometry';
 import type { WorldManager } from './WorldManager';
@@ -23,7 +25,7 @@ export async function expandWorld(world: WorldManager) {
   for(let x=-585;x<-420;x+=16)for(const z of [-225,-215])geometry.box(x,terrainHeight(x,z)+1,z,.65,3,.65,'#645c4e',true);
   crane(geometry,-465,terrainHeight(-465,-202),-202);
   for(const location of worldLocations)buildLocation(geometry,location);
-  buildLandscape(geometry);
+  buildBiomeLandscape(geometry,world,jobs);
   geometry.flush();
   await Promise.all(jobs);
 }
@@ -52,11 +54,14 @@ function buildBase(world:WorldManager,base:(typeof bases)[number],jobs:Promise<u
 }
 
 function buildTown(world:WorldManager,g:StaticGeometry,town:SettlementDefinition) {
-  const [cx,cz]=town.center,y=town.elevation,edge=town.radius-15;
-  for(const offset of [-56,0,56])for(const side of [-1,1]) {
-    g.box(cx+offset+side*9,y+.055,cz,4,.11,edge*2,'#c6c2af');
-    g.box(cx,y+.055,cz+offset+side*9,edge*2,.11,4,'#c6c2af');
-    for(const along of [-112,-56,0,56,112]) {
+  const [cx,cz]=town.center,y=town.elevation,edge=town.plan.halfWidth-15,depth=town.plan.halfDepth-15;
+  const paving=town.plan.layout==='village'?'#c8bea0':town.architecture==='terraces'?'#d3ad66':'#c6c2af';
+  for(const offset of town.plan.streets)for(const side of [-1,1]) {
+    const [from,to]=townStreetRange(town.plan,offset);g.box(cx+(from+to)/2,y+.055,cz+offset+side*9,to-from,.11,4,paving);
+  }
+  for(const offset of town.plan.avenues)for(const side of [-1,1]) {
+    g.box(cx+offset+side*9,y+.055,cz,4,.11,depth*2,paving);
+    for(let along=-depth+14;along<depth-14;along+=48) {
       // Furniture sits on the outer edge, leaving the walking line at eight metres clear.
       const lx=cx+offset+side*11,lz=cz+along+14;
       if(Math.hypot(lx-town.market[0],lz-town.market[1])>32)lamp(g,lx,lz);
@@ -65,13 +70,23 @@ function buildTown(world:WorldManager,g:StaticGeometry,town:SettlementDefinition
   town.homes.forEach(([x,z],index)=>building(g,x,z,y,town,index));
   buildMarket(g,town.market[0],town.market[1],town.color);
   // Four crossing stripes make the traffic/pedestrian crossings legible.
-  for(const ox of [-56,0,56])for(const oz of [-56,0,56])for(let stripe=-3;stripe<=3;stripe++) {
+  for(const ox of town.plan.avenues)for(const oz of town.plan.streets)for(let stripe=-3;stripe<=3;stripe++) {
+    const [from,to]=townStreetRange(town.plan,oz);if(ox<from||ox>to)continue;
     g.box(cx+ox+stripe,y+roadLift+.018,cz+oz+5.2,.5,.012,2.5,'#e9e0bd');
     g.box(cx+ox+5.2,y+roadLift+.018,cz+oz+stripe,2.5,.012,.5,'#e9e0bd');
   }
-  const tx=cx+edge-18,tz=cz+edge-18;
+  const tx=cx+edge-18,tz=cz+depth-18;
+  if(town.plan.staggered)for(const offset of town.plan.streets.filter(n=>n!==0)) {
+    const x=cx+Math.sign(offset)*edge*.65,z=cz+offset;
+    if(distanceToRoad([x,z])<12||distanceToRoad([x,z],[town.residentRoute])<8||town.homes.some(h=>Math.hypot(h[0]-x,h[1]-z)<15))continue;
+    g.cylinder(x,y+.25,z,5,.5,'#c8bea0',false,5,12);
+    tree(g,x,z,.6,town.id==='solara'?'palm':'olive');
+    bench(g,x,z+4,y);
+  }
   if(town.architecture)frontierLandmark(g,tx,tz,y,town);
-  else {
+  else if(town.plan.layout==='village') {
+    g.box(tx,y+2.5,tz,8,5,8,town.color,true);g.cylinder(tx,y+6,tz,6.5,3,'#a76b4c',true,0,4);
+  } else {
   g.box(tx,y+13,tz,9,26,9,town.color,true);g.box(tx,y+26.3,tz,10,.6,10,'#d5ddd0',true);
   for(const dx of [-3.5,3.5])for(const dz of [-3.5,3.5])g.box(tx+dx,y+29,tz+dz,.6,5.5,.6,'#d5ddd0',true);
   g.cylinder(tx,y+32.5,tz,7,3,'#a76b4c',false,0,4);
@@ -79,21 +94,22 @@ function buildTown(world:WorldManager,g:StaticGeometry,town:SettlementDefinition
   // Car-free pocket gardens sit outside the ring, with a clear central access path.
   }
   for(const side of [-1,1])for(let i=0;i<4;i++) {
-    const x=cx+side*(edge+8),z=cz-75+i*48;
+    const x=cx+side*(edge+8),z=cz-depth*.7+i*depth*.45;
+    if(distanceToRoad([x,z])<12)continue;
     tree(g,x,z,1.05,town.architecture==='alpine'?'pine':town.architecture==='riviera'||town.architecture==='terraces'||town.id==='bellacosta'||town.id==='porto-novo'?'palm':'cypress');
     bench(g,x+side*5,z+7,town.elevation);
   }
   // Distinct civic silhouettes supplement the individual shops and dense housing blocks.
   if(town.id==='oliveto')windmill(g,cx-edge-30,cz+60);
   if(town.id==='sanremo') {g.box(cx+edge+25,y+5,cz-55,25,10,20,'#9baeb0',true);g.box(cx+edge+25,y+10.4,cz-55,29,.8,24,'#31595b',true);}
-  if(town.id==='porto-novo'||town.id==='bellacosta')for(let i=0;i<4;i++)boat(g,cx-110+i*17,y+1,cz-edge-13,i%2?'#c77c56':'#658f9a');
+  if(town.id==='porto-novo'||town.id==='bellacosta')for(let i=0;i<4;i++)boat(g,cx-edge*.6+i*17,y+1,cz-depth-13,i%2?'#c77c56':'#658f9a');
   // A small number of reusable vehicle assets add grounded detail without a model per household.
   void world;
 }
 
 function building(g:StaticGeometry,x:number,z:number,y:number,town:SettlementDefinition,index:number) {
   if(town.architecture) {frontierHome(g,x,z,y,town,index);return;}
-  const floors=2+((index+town.population)%3),height=floors*3.3+1,width=14+(index%3),depth=13+(index%2);
+  const floors=town.plan.floors+(town.plan.layout==='village'?0:index%2),height=floors*3.3+1,width=14+(index%3),depth=13+(index%2);
   const palette=[town.color,'#e4d5b4','#cdb79d','#dfc3a3','#c4cbb6'];const color=palette[index%palette.length],shutter=index%3?'#527c78':'#738eaa';
   g.box(x,y+height/2,z,width,height,depth,color,true);g.box(x,y+.55,z,width+.2,1.1,depth+.2,'#9b9d8b');
   g.box(x,y+height+.2,z,width+1.1,.5,depth+1.1,'#d8ddc6',true);
@@ -223,21 +239,5 @@ function buildLocation(g:StaticGeometry,location:WorldLocation) {
   } else {
     for(let i=0;i<5;i++){g.box(x-20,y+3+i*2,z+18+i*5,19,6,8,'#9b9d8b',true);g.box(x-20,y+6.1+i*2,z+18+i*5,12,.15,8,'#6daaaa');g.box(x-20,y+3+i*2,z+13.9+i*5,12,6,.1,'#b0ced0');}
     for(let i=0;i<8;i++)tree(g,x-40+i*10,z-18,.8,'olive');
-  }
-}
-
-function buildLandscape(g:StaticGeometry) {
-  let seed=47193;const random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
-  const roads=Object.values(worldRoads);
-  for(let i=0;i<21500;i++) {
-    const x=(random()-.5)*4600,z=(random()-.5)*4500,y=terrainHeight(x,z),scale=.6+random()*.8;
-    if(y<3||y>158)continue;
-    if(settlements.some(t=>Math.max(Math.abs(x-t.center[0]),Math.abs(z-t.center[1]))<t.radius+22))continue;
-    if(bases.some(b=>Math.hypot(x-b.center[0],z-b.center[2])<100))continue;
-    if(worldLocations.some(l=>Math.hypot(x-l.position[0],z-l.position[1])<100))continue;
-    if(distanceToRoad([x,z],roads)<13)continue;
-    if(i%5<3)tree(g,x,z,scale,y>65?'pine':y<15&&i%3===0?'palm':i%4===0?'cypress':'olive');
-    else if(i%5===3) {g.cylinder(x,y+.6*scale,z,1.6*scale,1.2*scale,'#648959',false,.8*scale,5);g.cylinder(x+.9,y+.35,z+.4,.9,.7,'#86a574',false,.4,5);}
-    else {g.cylinder(x,y+.9*scale,z,2.2*scale,1.8*scale,'#9b9d8b',true,1.3*scale,5);for(let tuft=0;tuft<3;tuft++)g.box(x+tuft-.8,y+.45,z+2,.14,.9,.15,'#a5b97a',false,tuft);}
   }
 }

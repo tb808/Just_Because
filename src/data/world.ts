@@ -1,3 +1,5 @@
+import { townPlans, townStreetRange, type TownPlan } from './townPlans';
+import { landscapeSites } from './biomes';
 export type GroundPoint = readonly [x: number, z: number];
 
 export interface SettlementDefinition {
@@ -12,6 +14,7 @@ export interface SettlementDefinition {
   population: number;
   character: string;
   color: string;
+  plan:TownPlan;
   architecture?: 'alpine' | 'industrial' | 'riviera' | 'terraces';
 }
 
@@ -58,12 +61,11 @@ export const worldRoads: Record<string, readonly GroundPoint[]> = {
   meridianoAccess: [[1290,-1460],[970,-1480],[970,-1570],[1082,-1570]],
 };
 for (const town of townSeeds) {
-  const [cx,cz] = town.center, edge = town.radius - 15;
-  for (const offset of [-56,0,56]) {
-    worldRoads[`${town.id}-avenue-${offset}`] = [[cx+offset,cz-edge],[cx+offset,cz+edge]];
-    worldRoads[`${town.id}-street-${offset}`] = [[cx-edge,cz+offset],[cx+edge,cz+offset]];
-  }
-  worldRoads[`${town.id}-ring`] = [[cx-edge,cz-edge],[cx+edge,cz-edge],[cx+edge,cz+edge],[cx-edge,cz+edge],[cx-edge,cz-edge]];
+  const [cx,cz]=town.center,plan=townPlans[town.id],ex=plan.halfWidth-15,ez=plan.halfDepth-15;
+  for(const offset of plan.avenues)worldRoads[`${town.id}-avenue-${offset}`]=[[cx+offset,cz-ez],[cx+offset,cz+ez]];
+  for(const offset of plan.streets) {const [from,to]=townStreetRange(plan,offset);worldRoads[`${town.id}-street-${offset}`]=[[cx+from,cz+offset],[cx+to,cz+offset]];}
+  // Compact villages have a cross and short lanes; only larger settlements need a bypass.
+  if(plan.layout!=='village')worldRoads[`${town.id}-ring`]=[[cx-ex,cz-ez],[cx+ex,cz-ez],[cx+ex,cz+ez],[cx-ex,cz+ez],[cx-ex,cz-ez]];
 }
 
 export function distanceToRoad(point: GroundPoint, roads: readonly (readonly GroundPoint[])[] = Object.values(worldRoads)) {
@@ -75,19 +77,32 @@ export function distanceToRoad(point: GroundPoint, roads: readonly (readonly Gro
   }
   return distance;
 }
-const roadSegments=Object.values(worldRoads);
 export const settlements: readonly SettlementDefinition[] = townSeeds.map(town => {
   const [cx,cz]=town.center, [mx,mz]=town.market;
+  const plan=townPlans[town.id];
+  const farX=plan.halfWidth-23,farZ=plan.halfDepth-23;
+  const residentRoute:GroundPoint[]=[[mx,mz-8],[cx-8,mz-8],[cx-8,cz-farZ],[cx+8,cz-farZ],[cx+8,cz-8],[cx+farX,cz-8],[cx+farX,cz+8],[cx+8,cz+8],[cx+8,cz+farZ],[cx-8,cz+farZ],[cx-8,cz+8],[cx-farX,cz+8],[cx-farX,cz-8],[cx-8,cz-8],[cx-8,mz-8]];
   const homes: GroundPoint[]=[];
-  for (const dx of [-108,-80,-28,28,80,108]) for (const dz of [-108,-80,-28,28,80,108]) {
+  const parcels=(extent:number,axes:readonly number[])=>{
+    const roads=[-extent+15,...axes,extent-15],points:number[]=[];
+    for(let i=1;i<roads.length;i++) {
+      const gap=roads[i]-roads[i-1],count=gap>=40?Math.max(1,Math.floor((gap-12)/plan.spacing)):0;
+      for(let j=0;j<count;j++)points.push(roads[i-1]+gap*(j+1)/(count+1));
+    }
+    return points;
+  };
+  for(const dx of parcels(plan.halfWidth,plan.avenues))for(const dz of parcels(plan.halfDepth,plan.streets)) {
     const point:GroundPoint=[cx+dx,cz+dz];
     if (Math.abs(point[0]-mx)<32 && Math.abs(point[1]-mz)<25) continue;
-    if (distanceToRoad(point,roadSegments)<15) continue;
+    if (distanceToRoad(point)<15||distanceToRoad(point,[residentRoute])<12) continue;
+    if(Math.hypot(dx-(plan.halfWidth-33),dz-(plan.halfDepth-33))<21)continue;
+    // Leave a park quarter in boulevard towns and loose garden plots in villages.
+    if(plan.layout==='boulevard'&&dx>65&&dx<120&&dz>30&&dz<100)continue;
     // The original traversal towers remain approachable from the starting streets.
     if (town.id==='ventosa' && [[-26,-320],[34,-230],[112,-82]].some(([x,z])=>Math.hypot(point[0]-x,point[1]-z)<19)) continue;
     homes.push(point);
   }
-  return {...town, homes, residentRoute: [[mx,mz-8],[cx-8,mz-8],[cx-8,cz-118],[cx+8,cz-118],[cx+8,cz-64],[cx+118,cz-64],[cx+118,cz+8],[cx+8,cz+8],[cx+8,cz+118],[cx-8,cz+118],[cx-8,cz+64],[cx-118,cz+64],[cx-118,cz-8],[cx-8,cz-8],[cx-8,mz-8]]};
+  return {...town,plan,radius:Math.max(plan.halfWidth,plan.halfDepth),homes,residentRoute};
 });
 
 export interface WorldLocation {
@@ -116,14 +131,20 @@ export const worldLocations: readonly WorldLocation[] = [
 for (const location of worldLocations) {
   const nearest=settlements.reduce((best,town)=>Math.hypot(town.center[0]-location.position[0],town.center[1]-location.position[1])<Math.hypot(best.center[0]-location.position[0],best.center[1]-location.position[1])?town:best);
   // Leave from the town ring rather than cutting across the occupied blocks.
-  const dx=location.position[0]-nearest.center[0],dz=location.position[1]-nearest.center[1],edge=nearest.radius-15;
-  const start:GroundPoint=Math.abs(dx)>Math.abs(dz)?[nearest.center[0]+Math.sign(dx)*edge,nearest.center[1]]:[nearest.center[0],nearest.center[1]+Math.sign(dz)*edge];
-  worldRoads[`${location.id}-access`]=location.id==='caldera'?[start,[-250,455],[-80,565],location.position]:location.id==='north-sanctuary'?[start,[490,1200],[440,1270],location.position]:[start,location.position];
+  const dx=location.position[0]-nearest.center[0],dz=location.position[1]-nearest.center[1];
+  const start:GroundPoint=Math.abs(dx)>Math.abs(dz)?[nearest.center[0]+Math.sign(dx)*(nearest.plan.halfWidth-15),nearest.center[1]]:[nearest.center[0],nearest.center[1]+Math.sign(dz)*(nearest.plan.halfDepth-15)];
+  worldRoads[`${location.id}-access`]=location.id==='caldera'?[start,[-250,455],[-80,565],location.position]:location.id==='north-sanctuary'?[start,[490,1200],[440,1270],location.position]:location.id==='salt-fields'?[start,[1390,975],[1160,975],location.position]:[start,location.position];
+}
+
+// Destination access roads are now known. Never leave a house across those roads or POI yards.
+for(const town of settlements) {
+  town.homes=town.homes.filter(p=>distanceToRoad(p)>15&&!worldLocations.some(l=>Math.hypot(p[0]-l.position[0],p[1]-l.position[1])<92));
 }
 
 export const trafficRoute: readonly GroundPoint[] = [[-400,-286],[-300,-288],[-175,-284],[-82,-282],[42,-278],[126,-258],[208,-220]];
 export const miradaResidentRoute: readonly GroundPoint[] = [[-342,-316],[-328,-316],[-328,-308],[-342,-308]];
 export const landmarks = [
+  ...landscapeSites.map(site=>({name:site.name,position:site.position,symbol:'△',labelSide:'right' as const})),
   { name:'Aussichtspunkt',position:[-26,-320] as GroundPoint,symbol:'△',labelSide:'right' },
   ...settlements.map(({name,center})=>({name,position:center,symbol:'⌂',labelSide:'right' as const})),
   ...settlements.map(({name,market})=>({name:`Markt ${name}`,position:market,symbol:'◇',labelSide:'left' as const})),

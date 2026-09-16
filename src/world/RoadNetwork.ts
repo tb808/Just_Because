@@ -3,16 +3,20 @@ import { VertexData } from '@babylonjs/core/Meshes/mesh.vertexData';
 import { CreateBoxVertexData } from '@babylonjs/core/Meshes/Builders/boxBuilder';
 import { Color3 } from '@babylonjs/core/Maths/math.color';
 import { settlements, worldRoads, type GroundPoint } from '../data/world';
+import { townEdgeDistance, townStreetRange } from '../data/townPlans';
 import type { WorldManager } from './WorldManager';
 import { appendJunction, appendStrip, roadLift, terrainSurfaceHeight, type RoadGeometry } from './RoadSurface';
 
 /** All transport systems and the atlas use this same authored connected network. */
 export function buildRoadNetwork(world:WorldManager) {
   const blank=():RoadGeometry=>({positions:[],indices:[]});
-  const urban=(p:GroundPoint)=>settlements.some(t=>Math.max(Math.abs(p[0]-t.center[0]),Math.abs(p[1]-t.center[1]))<t.radius+18);
+  const urban=(p:GroundPoint)=>settlements.some(t=>townEdgeDistance(t,...p)<18);
   const crossing=(p:GroundPoint)=>settlements.some(t=>{
-    const offsets=[-t.radius+15,-56,0,56,t.radius-15];
-    return offsets.some(x=>Math.abs(p[0]-t.center[0]-x)<10)&&offsets.some(z=>Math.abs(p[1]-t.center[1]-z)<10);
+    const xs=[-t.plan.halfWidth+15,...t.plan.avenues,t.plan.halfWidth-15],zs=[-t.plan.halfDepth+15,...t.plan.streets,t.plan.halfDepth-15];
+    return xs.some(x=>Math.abs(p[0]-t.center[0]-x)<10)&&zs.some(z=>{
+      const [from,to]=townStreetRange(t.plan,z);
+      return Math.abs(p[1]-t.center[1]-z)<10&&p[0]-t.center[0]>=from-10&&p[0]-t.center[0]<=to+10;
+    });
   });
   function mesh(name:string,data:RoadGeometry,color:string,collision:boolean) {
     if(!data.indices.length)return;

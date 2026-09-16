@@ -6,6 +6,8 @@ import { VertexData } from '@babylonjs/core/Meshes/mesh.vertexData';
 import { worldConfig } from '../data/config';
 import { bases } from '../data/bases';
 import { settlements, worldLocations, worldRoads } from '../data/world';
+import { townEdgeDistance } from '../data/townPlans';
+import { biomeGroundColor, biomeRelief } from '../data/biomes';
 
 const smooth = (a: number, b: number, x: number) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 function naturalHeight(x:number,z:number) {
@@ -17,7 +19,7 @@ function naturalHeight(x:number,z:number) {
   const westRidge=48*Math.exp(-((x+630)**2/140000+(z-470)**2/350000));
   const eastRidge=72*Math.exp(-((x-950)**2/100000+(z-780)**2/240000));
   const rolling=7*Math.sin(x*.006)*Math.cos(z*.004)+4*Math.sin((x+z)*.014);
-  let height=-9+coast*(24+massif+westRidge+eastRidge+rolling);
+  let height=-9+coast*(24+massif+westRidge+eastRidge+rolling+biomeRelief(x,z));
   // Shallow bays bring the sea to the two working harbors without severing the mainland.
   const westBay=smooth(1320,1430,-x)*(1-smooth(110,290,Math.abs(z-150)));
   const southBay=smooth(1000,1115,-z)*(1-smooth(95,240,Math.abs(x-720)));
@@ -27,8 +29,7 @@ function naturalHeight(x:number,z:number) {
 function authoredHeight(x:number,z:number) {
   let height=naturalHeight(x,z);
   for(const town of settlements) {
-    const distance=Math.max(Math.abs(x-town.center[0]),Math.abs(z-town.center[1]));
-    const blend=1-smooth(town.radius,town.radius+145,distance);
+    const blend=1-smooth(0,145,townEdgeDistance(town,x,z));
     height+=(town.elevation-height)*blend;
   }
   for(const base of bases) {
@@ -40,7 +41,7 @@ function authoredHeight(x:number,z:number) {
       const blend=1-smooth(9,20,Math.hypot(x-location.position[0],z-location.position[1]));
       height+=(3.5-height)*blend;continue;
     }
-    const blend=1-smooth(42,85,Math.hypot(x-location.position[0],z-location.position[1]));
+    const blend=1-smooth(42,location.id==='salt-fields'?145:85,Math.hypot(x-location.position[0],z-location.position[1]));
     height+=(naturalHeight(...location.position)-height)*blend;
   }
   return height;
@@ -68,7 +69,7 @@ export function terrainHeight(x: number, z: number) {
   }
   height+=(target-height)*(1-smooth(7,24,nearest));
   // Plateau streets must stay flush with building foundations even at incoming road junctions.
-  for(const town of settlements) {const blend=1-smooth(town.radius,town.radius+30,Math.max(Math.abs(x-town.center[0]),Math.abs(z-town.center[1])));height+=(town.elevation-height)*blend;}
+  for(const town of settlements) {const blend=1-smooth(0,30,townEdgeDistance(town,x,z));height+=(town.elevation-height)*blend;}
   for(const base of bases) {const blend=1-smooth(78,110,Math.hypot(x-base.center[0],z-base.center[2]));height+=(base.center[1]-.2-height)*blend;}
   return height;
 }
@@ -85,10 +86,7 @@ function createTile(scene: Scene, material: StandardMaterial, tx: number, tz: nu
     const px = (tx + x / n) * size - worldConfig.size / 2, pz = (tz + z / n) * size - worldConfig.size / 2;
     const y = terrainHeight(px, pz);
     positions.push(px, y, pz);
-    const dry=.5+.5*Math.sin(px*.0027+pz*.003);
-    const tint = y < 2.5 ? '#d8cba0' : y > 118 ? '#a3a59a' : y > 65 ? '#7e9670' : dry>.7 ? '#a5b97a' : '#79a76c';
-    const c = Color3.FromHexString(tint).scale(0.91 + 0.09 * Math.sin(px * 0.07 + pz * 0.09));
-    colors.push(c.r, c.g, c.b, 1);
+    colors.push(...biomeGroundColor(px,pz,y),1);
     if (x < n && z < n) { const i = z * (n + 1) + x; indices.push(i, i + 1, i + n + 1, i + 1, i + n + 2, i + n + 1); }
   }
   VertexData.ComputeNormals(positions, indices, normals);

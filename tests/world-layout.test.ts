@@ -19,7 +19,7 @@ test('expanded island contains twelve populated towns, ten bases and a connected
   for(const settlement of settlements) {
     assert.equal(terrainHeight(...settlement.center),settlement.elevation);
     assert.equal(terrainHeight(...settlement.market),settlement.elevation);
-    assert.ok(settlement.homes.length>=20,`${settlement.name} must contain a real district`);
+    assert.ok(settlement.homes.length>=6,`${settlement.name} must remain inhabited even as a small village`);
     for(const home of settlement.homes) {
       assert.equal(terrainHeight(...home),settlement.elevation);
       assert.ok(distanceToRoad(home)>14,`${settlement.name} home overlaps a vehicle corridor`);
