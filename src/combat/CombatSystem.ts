@@ -18,6 +18,7 @@ import { BaseManager } from '../world/BaseManager';
 import { LivingWorld } from '../world/LivingWorld';
 import type { CombatSaveState } from '../core/SaveGame';
 import type { Difficulty } from '../data/difficulty';
+import { weapons, type WeaponId } from '../data/weapons';
 
 /** Wires combat modules; damage, ballistics, AI and visual effects keep separate ownership. */
 export class CombatSystem {
@@ -31,6 +32,16 @@ export class CombatSystem {
   readonly enemies: EnemyManager;
   readonly tanks: DestructibleComponent[] = [];
   score = 0;
+  money = 0;
+  reward(amount: number) { this.score += amount; this.money += amount; }
+  purchase(id: WeaponId) {
+    if (this.player.dead || this.heat > 0 || this.player.state !== 'ON_FOOT') return 'Handel nur zu Fuss und ohne Alarm möglich.';
+    if (this.weapons.owned.has(id)) { this.weapons.select(id); return 'Waffe ausgerüstet.'; }
+    const weapon = weapons[id];
+    if (this.money < weapon.price) return `Dir fehlen ${(weapon.price - this.money).toLocaleString('de-CH')} Cr.`;
+    this.money -= weapon.price; this.weapons.owned.add(id); this.weapons.inventory[id].reset(); this.weapons.select(id);
+    return `${weapon.name} gekauft und ausgerüstet.`;
+  }
   hitFlash = 0;
   killFlash = false;
   hurtFlash = 0;
@@ -50,7 +61,7 @@ export class CombatSystem {
   get difficulty() { return this.enemies.difficulty; }
   constructor(private scene: Scene, private player: Player, private input: InputManager, camera: ThirdPersonCamera, private world: WorldManager) {
     this.living = new LivingWorld(world);
-    this.bases.onLiberated = base => { this.score+=1000; this.world.setBaseLiberated(base.id,true); this.living.liberate(base.id); this.onMessage(`${base.name.toUpperCase()} BEFREIT · +1.000 Punkte · Nachschub verfügbar`); };
+    this.bases.onLiberated = base => { this.reward(1000); this.world.setBaseLiberated(base.id,true); this.living.liberate(base.id); this.onMessage(`${base.name.toUpperCase()} BEFREIT · +1.000 Cr · Nachschub verfügbar`); };
     this.effects = new CombatEffects(scene);
     this.explosions = new ExplosionSystem(scene, this.damage, this.effects, this.audio, player.position);
     this.projectiles = new ProjectileManager(scene, this.explosions, this.effects);
@@ -68,7 +79,7 @@ export class CombatSystem {
       if (distance < blast.radius && !player.dead) player.velocity.addInPlace(player.position.subtract(blast.position).normalize().scale(12 * (1 - distance / blast.radius)));
     };
     this.damage.onHit = (target, source) => {
-      if (target.faction !== 'player' && target.health.dead) { this.score += target.faction === 'enemy' ? 100 : 250; this.hitFlash = 0.3; this.killFlash = true; }
+      if (target.faction !== 'player' && target.health.dead) { this.reward(target.faction === 'enemy' ? 100 : 250); this.hitFlash = 0.3; this.killFlash = true; }
       if (source === 'player') this.enemies.noise(player.position);
     };
   }
@@ -97,7 +108,7 @@ export class CombatSystem {
   setDifficulty(difficulty: Difficulty) { this.enemies.setDifficulty(difficulty); }
   saveState(): CombatSaveState {
     return {
-      score: this.score, health: this.health.current, weapons: this.weapons.saveState(), selectedBase: this.bases.selected, difficulty: this.difficulty,
+      score: this.score, money: this.money, health: this.health.current, weapons: this.weapons.saveState(), selectedBase: this.bases.selected, difficulty: this.difficulty,
       liberatedBaseIds: this.bases.states.filter(base => base.liberated).map(base => base.definition.id),
       defeatedEnemyIds: this.enemies.enemies.filter(enemy => enemy.health.dead).map(enemy => enemy.id),
       destroyedTankIds: this.tanks.filter(tank => tank.health.dead).map(tank => tank.object.id),
@@ -105,6 +116,7 @@ export class CombatSystem {
   }
   restore(state: CombatSaveState) {
     this.setDifficulty(state.difficulty ?? 'medium'); this.reset(); this.score = Math.max(0, Math.floor(state.score));
+    this.money = Math.max(0, Math.floor(state.money ?? state.score));
     this.health.current = state.health > 0 ? Math.min(this.health.max, state.health) : this.health.max;
     this.weapons.restore(state.weapons);
     const defeated = new Set(state.defeatedEnemyIds), destroyed = new Set(state.destroyedTankIds);
@@ -117,7 +129,7 @@ export class CombatSystem {
   }
   reset() {
     this.revive(); this.enemies.reset(); this.tanks.forEach(t => t.reset()); this.explosions.reset(); this.projectiles.reset(); this.effects.reset();
-    this.score = 0; this.bases.reset(); this.living.reset();
+    this.score = 0; this.money = 0; this.weapons.newGame(); this.bases.reset(); this.living.reset();
     for(const base of this.bases.states) this.world.setBaseLiberated(base.definition.id,false);
   }
   dispose() { this.audio.dispose(); }

@@ -34,6 +34,16 @@ Die ausgegebene lokale Adresse öffnen und **Spielen** klicken. Bei einem defekt
 - **Erkundungs- und Gebietskarte:** Bereiste Teile der Insel bleiben auf Atlas und Minikarte sichtbar, während unerforschtes Land verdeckt bleibt und nur Küste sowie Kartengrenze erkennbar sind. Die zehn Einflussgebiete des Direktorats erscheinen rot; nach Einnahme ihrer Basis wechseln Land und zugehörige Städte dauerhaft auf Blau.
 - **Lokaler Spielstand:** Position, Aufträge, Punkte, Gesundheit, Munition, besiegte Wachen, zerstörte Tanks, befreite Basen, entdeckte Orte und Tageslichtzeit werden automatisch gesichert. Ältere Spielstände bleiben lesbar. Rücktaste behält den Einsatzfortschritt; Einsatz neu starten setzt ihn zurück.
 
+## Ausrüstung und Waffenhandel
+
+Ein neues Spiel beginnt mit der schwachen **Rost-9-Pistole**, 0 Credits und gesperrter Flugausrüstung. Mara übergibt in Kapitel 1 den Greifhaken. Am ersten Relais wird der Fallschirm geborgen; die erste Flugpassage nutzt deshalb den Schirm. Nach der Befreiung von Tomás in Kapitel 3 erhält Nika den reparierten Gleiter/Wingsuit. Erst dann wird das freiwillige Flugtraining verfügbar.
+
+An den östlichen Marktständen aller zwölf Städte stehen Waffenhändler mit ausgestellten 3D-Modellen und einem Schild „WAFFEN / HANDEL“. Goldene **$** im Atlas markieren sie. Zu Fuss und ohne Alarm öffnet **E** das Kaufmenü. **↑/↓** wählt, **E** kauft oder rüstet aus, **TAB** schliesst. Das Menü pausiert das Spiel und kann im Maus-Fallback auch geklickt werden.
+
+Neun unterschiedliche Kenney-Blaster-Modelle: Rost-9, Lido (400 Cr), Vespa (850), Scoglio (1.100), Sentiero (1.500), Vela-7 (2.400), Faro (3.200), Bastione (4.200) und Nova (5.600). Schrotflinten feuern mehrere Trefferstrahlen; die anderen Waffen unterscheiden sich unter anderem in Schaden, Reichweite, Schussfolge und Magazin. **1/2** wechselt rückwärts/vorwärts durch die gekauften Waffen.
+
+Aufträge, besiegte Wachen, zerstörte Tanks und befreite Basen geben Credits zusätzlich zu den bisherigen Punkten. Käufe verringern nur das Geld. Geld, Waffenbesitz, Auswahl und Munition werden gespeichert; Tod und Nachschub erhalten den Besitz. Alte Spielstände behalten ihre bisherigen Waffen und erhalten den bisherigen Punktestand als einmaliges Startguthaben. Für den vollständigen neuen Progressionsstart **Neues Spiel** wählen.
+
 ## Steuerung
 
 | Eingabe | Funktion |
@@ -49,8 +59,8 @@ Die ausgegebene lokale Adresse öffnen und **Spielen** klicken. Bei einem defekt
 | U | Aus Boden oder Kollision nach oben befreien |
 | Linke / rechte Maustaste | Schiessen / Zielen |
 | J | Alternative Feuertaste |
-| 1 / 2 / R | Gewehr / Raketenwerfer / Nachladen |
-| E | Markierte Auftragsaktion, Nachschub oder Gespräch |
+| 1 / 2 / R | Vorige / nächste gekaufte Waffe / Nachladen |
+| E | Markierte Auftragsaktion, Waffenhandel, Nachschub oder Gespräch |
 | SPACE / ENTER in Cutscenes | Nächste Einstellung / Szene überspringen |
 | ← → / E bei Storyentscheidung | Möglichkeit wählen / bestätigen |
 | Tab | Inselatlas öffnen / schliessen |

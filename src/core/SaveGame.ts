@@ -1,4 +1,4 @@
-import type { WeaponId } from '../data/weapons';
+import { isWeaponId, type WeaponId } from '../data/weapons';
 import type { MissionSaveState } from '../missions/MissionProgress';
 import { isDifficulty, type Difficulty } from '../data/difficulty';
 
@@ -8,10 +8,13 @@ export interface WeaponSaveState {
   selected: WeaponId;
   rifle: { ammo: number; reserve: number };
   launcher: { ammo: number; reserve: number };
+  owned?: WeaponId[];
+  ammunition?: Partial<Record<WeaponId, { ammo: number; reserve: number }>>;
 }
 
 export interface CombatSaveState {
   score: number;
+  money?: number;
   health: number;
   weapons: WeaponSaveState;
   selectedBase: number;
@@ -57,9 +60,13 @@ export function isGameSave(value: unknown): value is GameSave {
       && (save.world.surveyedMapCells === undefined || stringArray(save.world.surveyedMapCells))
       && finite(save.world.elapsed) && save.world.elapsed >= 0)
     && !!combat && finite(combat.score) && finite(combat.health) && finite(combat.selectedBase)
+    && (combat.money === undefined || finite(combat.money) && combat.money >= 0 && Number.isSafeInteger(combat.money))
     && (combat.difficulty === undefined || isDifficulty(combat.difficulty))
     && stringArray(combat.liberatedBaseIds) && stringArray(combat.defeatedEnemyIds) && stringArray(combat.destroyedTankIds)
-    && !!weapons && (weapons.selected === 'rifle' || weapons.selected === 'launcher')
+    && !!weapons && isWeaponId(weapons.selected)
+    && (weapons.owned === undefined || Array.isArray(weapons.owned) && weapons.owned.every(isWeaponId))
+    && (weapons.ammunition === undefined || !!weapons.ammunition && typeof weapons.ammunition === 'object' && !Array.isArray(weapons.ammunition)
+      && Object.entries(weapons.ammunition).every(([id, ammo]) => isWeaponId(id) && weaponValid(ammo)))
     && weaponValid(weapons.rifle) && weaponValid(weapons.launcher);
 }
 

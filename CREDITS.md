@@ -10,6 +10,8 @@ Lizenz- und Quellenprüfung: **7. September 2026**. Alle eingebundenen Drittanbi
 
 ## Tatsächlich eingebunden
 
+Erweiterung vom 16. September 2026: Neun unterschiedliche Waffenmodelle aus dem bereits lokal vorliegenden, lizenzierten Blaster Kit. Zusätzlich zu `blaster-e` und `blaster-j` werden `blaster-a`, `blaster-b`, `blaster-c`, `blaster-d`, `blaster-f`, `blaster-g` und `blaster-i` für Pistolen, Maschinenpistole, Schrotflinte, Karabiner, Präzisionsgewehr und Maschinengewehr verwendet. Die Stadtmärkte stellen diese Modelle aus; Händler verwenden vorhandene Blocky-Characters-Modelle. Herkunft, CC0-Lizenz und SHA-256 jedes importierten GLB stehen in `public/assets/licenses/inventory.json`. Keine zusätzlichen Asset-Downloads.
+
 | Asset / Originaldatei | Ersteller | Quelle | Lizenz | Format | Verwendung |
 |---|---|---|---|---|---|
 | Blocky Characters 2.0 / `character-f.glb` | Kenney | [Blocky Characters](https://kenney.nl/assets/blocky-characters) | CC0 1.0 | GLB | Nika Serrin; Originalanimationen idle, walk, sprint, holding-both |
@@ -40,7 +42,7 @@ Diese Liste bedeutet **nicht**, dass diese Assets bereits im Spiel eingebaut sin
 | Autos / Car Kit | [Kenney](https://kenney.nl/assets/car-kit) | CC0; Archivlizenz abgeglichen | GLB im geprüften Archiv | Primäre Fahrzeugfamilie; SUV bereits als Dekoration integriert. |
 | Militärfahrzeug / eigener SUV-Umbau | [Kenney Car Kit](https://kenney.nl/assets/car-kit) als Basis | CC0; Änderungen erlaubt | GLB | Generischer SUV mit eigenen Farben und Zubehör statt realer Fahrzeugmarke. Kein fertiges Militär-Pack behauptet. |
 | Helikopter | [kazuma / Poly Pizza](https://poly.pizza/m/EQJ2MECUbx) | Public Domain (CC0), Modellseite | FBX / glTF | Geeigneter einfacher Low-Poly-Kandidat, bisher nicht heruntergeladen. |
-| Waffen / Blaster Kit | [Kenney](https://kenney.nl/assets/blaster-kit) | CC0; Archivlizenz abgeglichen | GLB | Zwei Modelle bereits eingebunden; weitere Varianten möglich. |
+| Waffen / Blaster Kit | [Kenney](https://kenney.nl/assets/blaster-kit) | CC0; Archivlizenz abgeglichen | GLB | Neun Modelle eingebunden; Spielerwaffen und Händlerauslagen. |
 | Gebäude / City Kit Suburban | [Kenney](https://kenney.nl/assets/city-kit-suburban) | CC0; Archivlizenz abgeglichen | GLB | Primäre Dorf-/Stadtfamilie. |
 | Strassen / City Kit Roads | [Kenney](https://kenney.nl/assets/city-kit-roads) | CC0; Archivlizenz abgeglichen | GLB | Archiv geprüft, noch keine Dateien in `public`; derzeit eigene zusammenhängende Strassen-Geometrie. |
 | Bäume und Steine / Nature Kit | [Kenney](https://kenney.nl/assets/nature-kit) | CC0; Archivlizenz abgeglichen | GLB | Primäre Vegetation; instanziiert. |

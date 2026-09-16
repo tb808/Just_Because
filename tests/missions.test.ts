@@ -94,8 +94,9 @@ test('legacy saves preserve training and side progress but start the new story w
   const campaign = new MissionProgress(missionDefinitions); let reward = 0; campaign.onReward = value => reward += value;
   campaign.restore({ index: 2, elapsed: 42 });
   assert.equal(campaign.tracked.id, 'story-01'); assert.equal(campaign.pendingScene, 'arrival');
-  campaign.finishScene('arrival'); campaign.setTracked('heights');
-  assert.equal(campaign.objective!.id, traversalRoute[2].id); assert.equal(campaign.time, 42);
+  campaign.finishScene('arrival'); assert.equal(campaign.setTracked('heights'), false);
+  const training = campaign.saveState().records!.heights;
+  assert.equal(training.step, 2); assert.equal(training.elapsed, 42);
   campaign.restore({ index: 4, elapsed: 80 });
   assert.equal(campaign.entries.find(e => e.definition.id === 'heights')!.status, 'complete');
   assert.equal(reward, 0);

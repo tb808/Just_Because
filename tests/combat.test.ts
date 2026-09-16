@@ -57,6 +57,7 @@ test('a brief fire press shoots once and a wall blocks subsequent rifle damage',
   damage.register({ id: 'enemy-test', position: target.position, health, faction: 'enemy', radius: 1 });
   const explosions = new ExplosionSystem(scene, damage, effects, audio, player.position);
   const manager = new WeaponManager(scene, player, input, camera, damage, new ProjectileManager(scene, explosions, effects), effects, audio);
+  manager.owned.add('rifle'); manager.select('rifle');
   manager.update(1 / 60); manager.update(0.2);
   assert.equal(health.current, 73); assert.equal(manager.current.ammo, 29);
   const wall = MeshBuilder.CreateBox('cover', { width: 5, height: 8, depth: 0.2 }, scene);

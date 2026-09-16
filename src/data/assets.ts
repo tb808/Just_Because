@@ -16,6 +16,13 @@ export const assets = {
   },
   vehicles: { car: { path: 'assets/vehicles/car.glb', height: 2.15 } },
   weapons: {
+    pistol: { path: 'assets/weapons/pistol.glb', height: 0.22 },
+    compact: { path: 'assets/weapons/compact.glb', height: 0.24 },
+    smg: { path: 'assets/weapons/smg.glb', height: 0.28 },
+    shotgun: { path: 'assets/weapons/shotgun.glb', height: 0.3 },
+    carbine: { path: 'assets/weapons/carbine.glb', height: 0.3 },
+    marksman: { path: 'assets/weapons/marksman.glb', height: 0.32 },
+    heavy: { path: 'assets/weapons/heavy.glb', height: 0.4 },
     rifle: { path: 'assets/weapons/rifle.glb', height: 0.32 },
     launcher: { path: 'assets/weapons/launcher.glb', height: 0.48 },
   },

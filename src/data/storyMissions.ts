@@ -23,9 +23,9 @@ export const storyMissions: MissionDefinition[] = [
     recap: 'Tomás hat einen Notruf im Wartungskanal versteckt. Der Absender lässt sich nur über Orbis finden.',
     objectives: [
       goal('story-mara', 'Mara am Küstenmarkt treffen', 'Mara wartet am Markt von Ventosa. Geh zu Fuss zum markierten Treffpunkt und sprich mit ihr mit E.', market('ventosa'), { prop: 'contact', scene: 'mara' }),
-      goal('story-roof', 'Auf das erste Relais', 'Tomás sendet auf einer alten Wartungsfrequenz. Ziele mit F auf das Relais über Ventosa; SPACE löst den Haken.', [34, -230], { position: ground([34, -230], 29), kind: 'visit', radius: 10, airborne: true }),
+      goal('story-roof', 'Auf das erste Relais', 'Tomás sendet auf einer alten Wartungsfrequenz. Ziele mit F auf das Relais über Ventosa; SPACE löst den Haken.', [34, -230], { position: ground([34, -230], 29), kind: 'visit', radius: 10, airborne: true, radio: { speaker: 'Mara', text: 'In der Wartungskiste liegt dein alter Fallschirm. Er ist geprüft. Mit Q öffnest du ihn in der Luft. Für den Gleiter brauchst du Tomás.' } }),
       goal('story-high-relay', 'Das Signal über den Dächern suchen', 'Zieh dich mit F auf das hohe Relais nordöstlich. Hier ist der Empfang frei.', [112, -82], { position: ground([112, -82], 49), kind: 'visit', radius: 11, airborne: true }),
-      goal('story-flight', 'Mit dem Signal Richtung Orbis fliegen', 'Spring ab und öffne mit C den Wingsuit. Fliege durch den goldenen Ring. Q öffnet anschliessend den Fallschirm.', [160, -120], { position: ground([160, -120], 29), kind: 'visit', requiredState: 'WINGSUIT', radius: 16, airborne: true }),
+      goal('story-flight', 'Mit dem Signal Richtung Orbis fliegen', 'Dein Fallschirm ist bereit. Spring vom hohen Relais, öffne Q und steuere durch den goldenen Ring. Den Gleiter erhältst du später von Tomás.', [160, -120], { position: ground([160, -120], 29), kind: 'visit', requiredState: 'PARACHUTE', radius: 16, airborne: true }),
       goal('story-receiver', 'Den Notruf entschlüsseln', 'Lande mit Q auf dem Relaisdach vor Orbis. E liest Tomás’ Nachricht aus dem Empfänger.', [202, -170], { position: ground([202, -170], 16), radius: 9, scene: 'signal' }),
     ],
   },
@@ -44,7 +44,7 @@ export const storyMissions: MissionDefinition[] = [
     objectives: [
       goal('story-port-scan', 'Tomás’ Kennung orten', 'Halte am östlichen Hafenzugang acht Sekunden die Position. Der Empfänger peilt Tomás’ Wartungssender.', [-325, -215], { kind: 'hold', holdSeconds: 8 }),
       free('porto'),
-      goal('story-tomas', 'Tomás am Hafenausgang treffen', 'Der Hafen ist offen. Tomás wartet beim markierten Ausgang. E beginnt das Gespräch.', [-325, -215], { prop: 'contact', scene: 'brother' }),
+      goal('story-tomas', 'Tomás am Hafenausgang treffen', 'Der Hafen ist offen. Tomás wartet mit deinem reparierten Gleiter beim markierten Ausgang. E beginnt das Gespräch und schaltet den Wingsuit frei.', [-325, -215], { prop: 'contact', scene: 'brother' }),
     ],
   },
   {

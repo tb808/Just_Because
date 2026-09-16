@@ -7,6 +7,7 @@ import { settlements, worldLocations, worldRoads } from '../data/world';
 import { worldConfig } from '../data/config';
 import { terrainHeight } from '../world/Terrain';
 import { territories, territoryAt, territoryForSettlement } from '../data/territories';
+import { weaponMerchants } from '../world/WeaponMerchants';
 
 type AtlasView = 'world' | 'journal' | 'travel';
 const escape = (value: string) => value.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
@@ -97,6 +98,7 @@ export class WorldMap {
             ${worldLocations.map(point => `<g class="map-poi" transform="translate(${point.position[0]},${-point.position[1]})"><circle r="14"/><title>${escape(point.name)}</title></g>`).join('')}
             ${settlements.map(place => `<g class="map-town occupied" id="town-${place.id}" data-territory="${territoryForSettlement(place.id)?.baseId ?? ''}" transform="translate(${place.center[0]},${-place.center[1]})"><rect x="-20" y="-20" width="40" height="40" rx="6"/><text x="31" y="-28">${escape(place.name)}</text></g>`).join('')}
             ${bases.map((base,i) => `<g class="map-base" id="map-${base.id}" transform="translate(${base.flag[0]},${-base.flag[2]})"><circle r="27"/><text class="base-number" text-anchor="middle" y="11">${i+1}</text><title>${escape(base.name)}</title></g>`).join('')}
+            ${weaponMerchants.map(merchant => `<g class="map-merchant" transform="translate(${merchant.position[0]},${-merchant.position[2]})"><circle r="16"/><text text-anchor="middle" y="10">$</text><title>${escape(merchant.name)} · E vor dem östlichen Marktstand</title></g>`).join('')}
             <g id="map-objective-marker"><circle r="48"/><path d="M 0 -25 L 20 0 L 0 25 L -20 0 Z"/></g>
           </g>
           <path d="${landPath}" class="map-coast-outline"/>
@@ -174,7 +176,7 @@ export class WorldMap {
       });
       this.text('atlas-help', `${missions.storyCompletedCount}/8 Kapitel · ${missions.storyComplete ? 'Geschichte abgeschlossen. Die Insel bleibt spielbar.' : 'Folge der Geschichte oder nimm dir Zeit für einen freiwilligen Auftrag.'} Abgeschlossene Kapitel enthalten einen Rückblick.`);
     } else if (this.view === 'travel') {
-      this.rows = settlements.map(place => ({id:place.id,title:place.name,description:place.character,
+      this.rows = settlements.map(place => ({id:place.id,title:place.name,description:`${place.character} Waffenhändler: östlicher Marktstand, mit E handeln.`,
         label:`${Math.round(Math.hypot(player.position.x-place.center[0],player.position.z-place.center[1]))} m entfernt`,status:exploration.discovered.has(place.id)?'ENTDECKT':'UNERKUNDET'}));
       this.text('atlas-help', 'Entdecke Orte zu Fuss oder aus der Luft. Danach reist du ausserhalb eines Alarms vom Boden direkt zu ihrem Marktplatz.');
     } else {
@@ -183,7 +185,7 @@ export class WorldMap {
         return {id:b.definition.id,title:territory?.name ?? b.definition.name,description:`${b.definition.name} · ${b.definition.description}`,
           label:`${b.guards}/${b.definition.guards.length} Wachen · ${b.tanks}/${b.definition.tanks.length} Tanks`,status:b.liberated?'BEFREIT':'BESETZT'};
       });
-      this.text('atlas-help', 'Erkundete Gebiete werden sichtbar. Rot gehört dem Direktorat; mit der Basis werden das Land und seine Städte blau und frei.');
+      this.text('atlas-help', 'Rot: besetzt. Blau: befreit. Goldene $ markieren Waffenhändler an den Stadtmärkten. Vor dem östlichen Stand mit E handeln.');
     }
     this.selection = Math.min(this.selection, Math.max(0,this.rows.length-1));
     const signature = JSON.stringify([this.view,this.selection,this.rows.map(r=>[r.id,r.status,r.label,r.description])]);

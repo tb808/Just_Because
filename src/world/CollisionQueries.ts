@@ -53,12 +53,12 @@ export class CollisionQueries {
     for (const mesh of this.dynamic) found.add(mesh);
     return [...found].filter(mesh => !mesh.isDisposed() && mesh.isEnabled() && mesh.checkCollisions);
   }
-  pick(ray: Ray, excluded?: AbstractMesh) {
+  pick(ray: Ray, excluded?: AbstractMesh, ignore?:(mesh:AbstractMesh)=>boolean) {
     const endX = ray.origin.x + ray.direction.x * ray.length;
     const endZ = ray.origin.z + ray.direction.z * ray.length;
     let nearest: PickingInfo | null = null;
     for (const mesh of this.candidates(Math.min(ray.origin.x, endX), Math.max(ray.origin.x, endX), Math.min(ray.origin.z, endZ), Math.max(ray.origin.z, endZ))) {
-      if (mesh === excluded) continue;
+      if (mesh === excluded || ignore?.(mesh)) continue;
       mesh.computeWorldMatrix();
       const hit = ray.intersectsMesh(mesh);
       if (hit.hit && hit.distance <= ray.length && (!nearest || hit.distance < nearest.distance)) nearest = hit;
@@ -67,9 +67,9 @@ export class CollisionQueries {
   }
 }
 
-export function pickCollision(scene: Scene, ray: Ray, excluded?: AbstractMesh) {
+export function pickCollision(scene: Scene, ray: Ray, excluded?: AbstractMesh, ignore?:(mesh:AbstractMesh)=>boolean) {
   const index = indexes.get(scene);
-  return index ? index.pick(ray, excluded) : scene.pickWithRay(ray, mesh => mesh.checkCollisions && mesh.isEnabled() && mesh !== excluded);
+  return index ? index.pick(ray, excluded, ignore) : scene.pickWithRay(ray, mesh => mesh.checkCollisions && mesh.isEnabled() && mesh !== excluded && !ignore?.(mesh));
 }
 
 export function moveWithWorldCollisions(body: AbstractMesh, displacement: Vector3) {

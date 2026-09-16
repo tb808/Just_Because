@@ -100,7 +100,7 @@ const timedMissions: MissionDefinition[] = timedRoutes.map(route => {
     id: `timed-${route.id}`, title: route.title, category: 'Zeitlauf', reward: 1400, description: route.detail,
     timeLimit: Math.ceil((distance / 12 + 120) / 15) * 15,
     objectives: [
-      interact(`${route.id}-start`, `Sendung in ${from.name} abholen`, `${route.detail} Die Uhr startet mit E. Nutze Sprint, Greifhaken und Flugausrüstung. Bei Ablauf kannst du am Start neu beginnen.`, market(from), 'Zeitlauf starten'),
+      interact(`${route.id}-start`, `Sendung in ${from.name} abholen`, `${route.detail} Die Uhr startet mit E. Nutze einen SUV oder deine bereits freigeschaltete Ausrüstung. Bei Ablauf kannst du am Start neu beginnen.`, market(from), 'Zeitlauf starten'),
       ...route.stops.map((id, index) => { const place = location(id); return visit(`${route.id}-${index}`, place.name, `Passiere ${place.name} und folge dem nächsten Wegpunkt. Der Timer läuft auch beim Wechsel des Auftrags weiter.`, place.position, 24); }),
       interact(`${route.id}-finish`, `Expressübergabe · ${to.name}`, 'Gib die Sendung zu Fuss am markierten Markt mit E ab, bevor die Zeit abläuft.', market(to), 'Expresssendung abgeben'),
     ],
@@ -121,7 +121,7 @@ const cacheMissions: MissionDefinition[] = cacheStories.map(story => ({
 /** Five optional diversions keep their original IDs and objective ordering for saved games. */
 export const missionDefinitions: readonly MissionDefinition[] = [
   ...storyMissions,
-  { id: 'heights', title: 'Flugtraining über Ventosa', description: 'Freiwillig: übe Greifhaken, Wingsuit und Fallschirm auf der bekannten Höhenroute.', category: 'Höhenroute', reward: 900, objectives: traversalRoute },
+  { id: 'heights', title: 'Flugtraining über Ventosa', description: 'Freiwillig: übe Greifhaken, Wingsuit und Fallschirm auf der bekannten Höhenroute.', category: 'Höhenroute', reward: 900, requires: ['story-03'], objectives: traversalRoute },
   ...civicMissions,
   ...reconMissions,
   ...timedMissions,

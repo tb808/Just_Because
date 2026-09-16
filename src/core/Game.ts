@@ -22,6 +22,9 @@ import { difficultyLabels } from '../data/difficulty';
 import { VehicleManager } from '../vehicles/VehicleManager';
 import { CollisionQueries } from '../world/CollisionQueries';
 import { CutsceneDirector } from '../story/CutsceneDirector';
+import { equipmentLabels, type EquipmentId, storyEquipment } from '../player/EquipmentProgress';
+import { buildWeaponMerchants, nearbyWeaponMerchant } from '../world/WeaponMerchants';
+import { WeaponShop } from '../ui/WeaponShop';
 
 export class Game {
   private engine: Engine;
@@ -41,6 +44,7 @@ export class Game {
   private exploration = new Exploration();
   private hud = new HUD();
   private map = new WorldMap();
+  private shop = new WeaponShop();
   private running = false;
   private ready = false;
   private accumulator = 0;
@@ -66,7 +70,7 @@ export class Game {
     this.story.onFinish = (id, choice) => {
       this.missions.finishScene(id, choice); this.player.visual.setEnabled(true);
       this.missions.setCinematic(false); this.camera.update(0, true); this.accumulator = 0;
-      this.world.chunks.update(1, this.player.position); this.saveGame();
+      this.world.chunks.update(1, this.player.position); this.syncEquipment(); this.saveGame();
       if (id === 'ending') this.hud.storyEnding(this.missions.choice);
       else this.hud.notify(`Weiter: ${this.missions.objective?.title ?? 'Cala Ventra erkunden'}`);
     };
@@ -74,8 +78,17 @@ export class Game {
     this.combat.onMessage = message => this.hud.notify(message);
     this.combat.onRespawn = () => this.controller.reset();
     this.combat.onDeath = () => { this.vehicles.leaveForDeath(); this.controller.cancelAbilities(); };
-    this.missions.onAdvance = message => this.hud.notify(message);
-    this.missions.onReward = score => { this.combat.score += score; };
+    this.missions.onAdvance = message => {
+      this.hud.notify(message);
+      if (!this.missions.pendingScene) this.syncEquipment();
+    };
+    this.missions.onReward = score => this.combat.reward(score);
+    this.controller.onLockedEquipment = message => this.hud.notify(message);
+    this.shop.onClose = () => this.closeShop();
+    this.shop.onPurchase = id => {
+      if (!this.shop.open || !nearbyWeaponMerchant(this.player.position)) return;
+      this.shop.message(this.combat.purchase(id)); this.shop.render(this.combat); this.saveGame();
+    };
     this.missions.onRadio = line => this.hud.radio(line.speaker, line.text);
     this.exploration.onDiscover = name => this.hud.notify(`${name} entdeckt · Schnellreise im Atlas freigeschaltet.`);
     this.map.onTrackMission = id => {
@@ -97,7 +110,7 @@ export class Game {
     this.vehicles.onEnter = () => this.controller.cancelAbilities();
     this.vehicles.onReset = () => this.controller.reset();
     this.assetManager.onProgress = (done, total) => this.hud.loading(done, total);
-    this.input.onPause = () => { this.running = false; this.story.pauseAudio(true); this.map.close(); this.scene.animationsEnabled = false; this.accumulator = 0; this.hud.pause(true); this.saveGame(); };
+    this.input.onPause = () => { this.running = false; this.story.pauseAudio(true); this.map.close(); this.shop.close(); this.scene.animationsEnabled = false; this.accumulator = 0; this.hud.pause(true); this.saveGame(); };
     this.hud.onStart = () => void this.start();
     this.hud.onNewGame = () => { this.resetProgress(); void this.start(); };
     this.hud.onReset = () => this.resetProgress();
@@ -112,12 +125,14 @@ export class Game {
   async init() {
     await Promise.all([this.world.create(), this.player.load(this.assetManager), this.story.load(this.assetManager)]);
     await this.combat.load(this.assetManager);
+    await buildWeaponMerchants(this.scene, this.assetManager, this.world.chunks);
     new CollisionQueries(this.scene);
     this.atmosphere = new Atmosphere(this.scene);
     const save = loadGameSave();
     const validPosition = save && validSavedPosition(save.player);
     if (save) { this.player.position.copyFrom(validPosition ? Vector3.FromArray(save.player) : this.world.spawn); this.missions.restore(save.missions); this.combat.restore(save.combat); }
     else this.player.position.copyFrom(this.world.spawn);
+    this.syncEquipment(false);
     this.hud.setDifficulty(this.combat.difficulty);
     if (save?.world) { this.exploration.restore(save.world.discoveredSettlementIds, save.world.surveyedMapCells); this.atmosphere.elapsed = save.world.elapsed; }
     this.world.chunks.update(1,this.player.position); this.atmosphere.update(0,this.player.position);
@@ -137,6 +152,16 @@ export class Game {
     const dt = Math.min(this.engine.getDeltaTime() / 1000, movement.maxFrameTime);
     if (this.running && this.input.locked) {
       if (this.playStory(dt)) { this.scene.render(); return; }
+      if (this.shop.open) {
+        if (this.input.take('map')) this.closeShop();
+        else {
+          if (this.input.take('lookUp')) this.shop.navigate(-1);
+          if (this.input.take('lookDown')) this.shop.navigate(1);
+          if (this.input.take('interact')) this.shop.confirm();
+          this.input.lookX = this.input.lookY = this.input.zoom = 0;
+        }
+        this.scene.render(); return;
+      }
       if (this.input.take('map')) { if(this.map.open) this.closeAtlas(); else this.toggleAtlas('world'); }
       else if (this.input.take('mission')) this.toggleAtlas('journal');
       else if (this.input.take('travel')) this.toggleAtlas('travel');
@@ -159,6 +184,14 @@ export class Game {
       const liberatedBaseIds = this.combat.bases.states.filter(base=>base.liberated).map(base=>base.definition.id);
       if (!this.player.dead && this.input.justPressed('interact') && this.missions.interact(this.player,liberatedBaseIds)) this.input.take('interact');
       if (this.playStory(0)) { this.scene.render(); return; }
+      const merchant = nearbyWeaponMerchant(this.player.position);
+      if (!this.player.dead && this.player.state === 'ON_FOOT' && merchant && this.input.take('interact')) {
+        if (this.combat.heat) this.hud.notify('Die Händler warten, bis der Alarm vorüber ist.');
+        else {
+          this.shop.show(merchant, this.combat); this.scene.animationsEnabled = false; this.accumulator = 0; this.input.clear();
+          this.scene.render(); return;
+        }
+      }
       if (!this.player.dead && this.input.justPressed('interact')) {
         const nearSupply=this.combat.nearSupply,event=this.vehicles.interact();
         if(event) {this.input.take('interact');if(event==='entered'&&nearSupply)this.combat.resupply('Nachschub aufgenommen · SUV gestartet · W/S fahren · A/D lenken · E aussteigen');}
@@ -176,14 +209,16 @@ export class Game {
       this.uiTimer += dt;
       if (this.uiTimer > 0.1) {
         this.hud.update(this.player, this.engine.getFps(), this.world.chunks.activeCount);
+        this.hud.updateEquipment(this.controller.equipment, this.player);
         this.hud.updateCombat(this.combat);
         this.hud.updateWorld(this.player, this.atmosphere?.clock ?? '08:30', this.combat.living.activitySummary);
         const nearbyBase = this.combat.bases.nearby(this.player.position);
         const interactionPrompt = this.missions.interactionPrompt;
         const vehiclePrompt = this.vehicles.interactionPrompt;
         if (interactionPrompt) this.hud.element('hint').textContent = interactionPrompt;
+        else if (merchant && this.player.state === 'ON_FOOT') this.hud.element('hint').textContent = `E · ${merchant.name}${this.combat.heat ? ' · Bei Alarm geschlossen' : ''}`;
         else if(vehiclePrompt) this.hud.element('hint').textContent=vehiclePrompt;
-        const target = this.controller.grapple.target(); this.hud.element('reticle').classList.toggle('valid', !!target);
+        const target = this.controller.equipment.grapple ? this.controller.grapple.target() : undefined; this.hud.element('reticle').classList.toggle('valid', !!target);
         this.hud.element('target-label').textContent = target ? `F · ${Math.round(target.distance)} M` : '';
         this.updateMap();
         const storyBaseId = this.missions.objective?.baseId;
@@ -196,7 +231,7 @@ export class Game {
         const progress = capture?.progress ?? this.missions.progress;
         this.hud.element('mission-progress').style.width = `${progress * 100}%`;
         this.hud.element('mission-count').textContent = capture?.count ?? `${this.missions.count} · M JOURNAL`;
-        if (nearbyBase && capture && !interactionPrompt && !vehiclePrompt) this.hud.element('hint').textContent = capture.hint;
+        if (nearbyBase && capture && !interactionPrompt && !vehiclePrompt && !merchant) this.hud.element('hint').textContent = capture.hint;
         this.uiTimer = 0;
       }
     }
@@ -216,6 +251,13 @@ export class Game {
     return true;
   }
   private updateMap() { this.map.update(this.combat.bases,this.player,this.missions,this.exploration,this.showCombat); }
+  private syncEquipment(notify = true) {
+    const next = storyEquipment(this.missions.saveState());
+    const unlocked = (Object.keys(next) as EquipmentId[]).filter(id => next[id] && !this.controller.equipment[id]);
+    this.controller.equipment = next;
+    if (notify && unlocked.length) this.hud.radio('Ausrüstung freigeschaltet', unlocked.map(id => equipmentLabels[id]).join(' · ') + ' ist jetzt verfügbar.');
+  }
+  private closeShop() { this.shop.close(); this.scene.animationsEnabled = this.running; this.accumulator = 0; this.input.clear(); }
   private toggleAtlas(view: 'world'|'journal'|'travel') {
     const open = this.map.toggle(view); this.scene.animationsEnabled = !open; this.accumulator = 0; this.input.clear(); this.updateMap();
   }
@@ -237,8 +279,10 @@ export class Game {
     storeGameSave(save);
   }
   private resetProgress() {
+    this.shop.close(); this.map.close();
     this.story.stop(); this.player.visual.setEnabled(true);
     clearGameSave(); this.vehicles.reset(); this.controller.reset(); this.missions.reset(); this.combat.reset(); this.exploration.reset();
+    this.syncEquipment(false);
     if (this.atmosphere) this.atmosphere.elapsed = 0;
     this.showCombat = false; this.world.chunks.update(1, this.player.position); this.atmosphere?.update(0, this.player.position); this.saveGame();
   }

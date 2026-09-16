@@ -24,8 +24,9 @@ export const screenplay: readonly StoryScene[] = [
     line('Mara', 'Dein Bruder hat mir das hier gebracht. Danach standen zwei Wagen vor der Klinik.', 'two'),
     line('Nika', 'Warum hast du nicht angerufen?', 'nika'),
     line('Mara', 'Weil beim letzten Anruf am nächsten Morgen mein Patient verschwunden war.', 'partner'),
-    line('Mara', 'Tomás sagte: Über den Dächern hört sie mich. Erst das kleine Relais, dann das hohe. Du kennst den Weg.', 'detail'),
+    line('Mara', 'Hier ist dein Greifhaken. Mit F kommst du zum kleinen Relais; dort liegt dein Fallschirm in der Wartungskiste. Dann zum hohen Relais. Tomás sendet über den Dächern.', 'detail'),
     line('Nika', 'Ja. Wir haben ihn zusammen gebaut.', 'nika'),
+    line('Mara', 'Mit der alten Pistole kommst du nicht weit. Die Händler an den Stadtmärkten verkaufen bessere Waffen. Hilf den Leuten, dann kannst du sie dir leisten.', 'partner'),
   ] },
   { id: 'signal', title: 'Ein Ruf aus Orbis', chapter: 'KAPITEL 01 / DER NOTRUF', location: 'Ventosa · Relaisdach', anchor: 'story-receiver', mood: 'danger', shots: [
     line('Tomás · Aufnahme', 'Wartungskanal sieben. Sie bringen mich nach Mirada. Orbis hat die Transportliste.', 'wide'),
@@ -47,6 +48,7 @@ export const screenplay: readonly StoryScene[] = [
     line('Tomás', 'Er wollte die Klinik schliessen. Ich sollte nur einen Filter schreiben. Dann noch einen.', 'partner'),
     line('Nika', 'Und wann hast du gemerkt, was der Filter aussortiert?', 'nika'),
     line('Tomás', 'Nicht hier. Bei den Kaskaden. Bitte.', 'two'),
+    line('Tomás', 'Deinen Gleiter habe ich in der Werkstatt repariert. Er gehört wieder dir. C öffnet den Wingsuit in der Luft, Q den Fallschirm. Komm zu den Kaskaden.', 'detail'),
   ] },
   { id: 'truth', title: 'Keine Ausrede', chapter: 'KAPITEL 04 / DIE KASKADEN', location: 'Kaskaden von Estela · Unter dem Wasserrauschen', anchor: 'story-confession', cast: 'tomas', mood: 'memory', shots: [
     line('Tomás', 'Ich wusste, dass sie mithören. Ich habe mir gesagt: Wenn ich bleibe, kann ich Namen aus den Listen nehmen.', 'partner'),

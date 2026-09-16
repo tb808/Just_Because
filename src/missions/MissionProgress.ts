@@ -160,7 +160,7 @@ export class MissionProgress {
     if (record.step >= definition.objectives.length) {
       record.complete = true;
       this.onReward(definition.reward);
-      this.onAdvance(`${definition.title} abgeschlossen · +${definition.reward.toLocaleString('de-CH')} Punkte · ${this.completedCount}/${this.definitions.length} Aufträge`);
+      this.onAdvance(`${definition.title} abgeschlossen · +${definition.reward.toLocaleString('de-CH')} Cr · ${this.completedCount}/${this.definitions.length} Aufträge`);
       const nextChapter = definition.chapter && this.definitions.find(d => d.chapter === definition.chapter! + 1);
       if (!nextChapter || !this.setTracked(nextChapter.id)) this.cycle();
     } else this.onAdvance(`Ziel erreicht · ${definition.objectives[record.step].title}`);

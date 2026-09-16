@@ -10,8 +10,15 @@ import { Wingsuit } from '../abilities/Wingsuit';
 import { Parachute } from '../abilities/Parachute';
 import { transition, type PlayerState } from './PlayerState';
 import { moveWithWorldCollisions, pickCollision } from '../world/CollisionQueries';
+import { equipmentRequirements, type Equipment, type EquipmentId } from './EquipmentProgress';
 
 export class PlayerMovement {
+  equipment: Equipment = { grapple: false, parachute: false, wingsuit: false };
+  onLockedEquipment: (message: string) => void = () => {};
+  private canUse(id: EquipmentId) {
+    if (this.equipment[id]) return true;
+    this.onLockedEquipment(`Noch gesperrt · ${equipmentRequirements[id]}.`); return false;
+  }
   private coyote = 0;
   private stalledFor = 0;
   private recoveryPosition?: Vector3;
@@ -48,12 +55,12 @@ export class PlayerMovement {
     this.coyote = grounded ? movement.coyoteTime : Math.max(0, this.coyote - dt);
     if (grounded && p.state !== 'GRAPPLING' && p.state !== 'ON_FOOT') this.setState(transition(p.state, 'land'));
     else if (!grounded && p.state === 'ON_FOOT') p.state = 'FALLING';
-    if (this.input.take('grapple')) {
+    if (this.input.take('grapple') && this.canUse('grapple')) {
       if (p.state === 'GRAPPLING') this.setState(transition(p.state, 'release'));
       else if (this.grapple.engage()) this.setState(transition(p.state, 'grapple'));
     }
-    if (this.input.take('wingsuit')) this.setState(transition(p.state, 'wingsuit', !grounded));
-    if (this.input.take('parachute')) this.setState(transition(p.state, 'parachute', !grounded));
+    if (this.input.take('wingsuit') && this.canUse('wingsuit')) this.setState(transition(p.state, 'wingsuit', !grounded));
+    if (this.input.take('parachute') && this.canUse('parachute')) this.setState(transition(p.state, 'parachute', !grounded));
     const { x, z } = this.input.axes();
     const forward = this.camera.heading, right = new Vector3(forward.z, 0, -forward.x);
     const wish = forward.scale(z).add(right.scale(x)); if (wish.lengthSquared() > 1) wish.normalize();

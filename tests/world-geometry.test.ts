@@ -13,6 +13,7 @@ import { bases } from '../src/data/bases';
 import type { AssetManager } from '../src/core/AssetManager';
 import { Ray } from '@babylonjs/core/Culling/ray';
 import { CollisionQueries } from '../src/world/CollisionQueries';
+import { weaponMerchants } from '../src/world/WeaponMerchants';
 
 interface Bounds {minX:number;maxX:number;minZ:number;maxZ:number;minY:number;maxY:number}
 test('non-rendered world construction batches geometry and preserves navigable sidewalks',async(t)=>{
@@ -57,6 +58,14 @@ test('non-rendered world construction batches geometry and preserves navigable s
       const [x,y,z]=objective.position;
       const hit=[...bounds,...directBounds].find(obstacle=>obstacle.maxY>y-.5&&obstacle.minY<y+.8&&x>obstacle.minX-.4&&x<obstacle.maxX+.4&&z>obstacle.minZ-.4&&z<obstacle.maxZ+.4);
       assert.ok(!hit,`${mission.id}/${objective.id} arrival intersects collision geometry: ${JSON.stringify(hit)}`);
+    }
+    for (const merchant of weaponMerchants) {
+      const [x,y,z] = merchant.position;
+      // Walk the last eight metres from the open plaza to the counter.
+      for (let offset = 0; offset <= 8; offset++) {
+        const hit = [...bounds,...directBounds].find(o => o.maxY > y-.5 && o.minY < y+.8 && x-offset > o.minX-.4 && x-offset < o.maxX+.4 && z > o.minZ-.4 && z < o.maxZ+.4);
+        assert.ok(!hit, `${merchant.id} merchant approach obstructed: ${JSON.stringify(hit)}`);
+      }
     }
     const blockedGuards:string[]=[];
     for(const base of bases)for(const guard of base.guards) {

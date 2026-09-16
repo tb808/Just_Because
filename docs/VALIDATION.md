@@ -1,3 +1,13 @@
+## 16. September 2026 – Storyprogression und Waffenhandel
+
+Neues Spiel: Rost-9, 0 Credits, gesperrte Ausrüstung. Greifhaken nach Mara, Fallschirm nach dem ersten Relais, Gleiter nach Tomás in Kapitel 3. Erstes Story-Flugziel auf Fallschirm umgestellt; freiwilliges Wingsuit-Training an Kapitel 3 gebunden. Alle acht Kapitel werden in den Logiktests mit beiden Entscheidungen und Wiederladen an jedem Zwischenstand abgeschlossen. Kein vollständiger manueller Storydurchlauf.
+
+Automatisiert geprüft: Kauf und einmaliger Geldabzug, Besitz und Waffenwechsel, Munition/Neuladen, Nachschub und Wiederbelebung ohne Gratiswaffen, vollständiger Neustart, Altspielstandmigration, gesperrte Bewegungseingaben, neun unterschiedliche Modell-Hashes und ihre Provenienz. Alle zwölf Händlerzugänge wurden gegen die tatsächlichen Kollisionsformen der Stadtmärkte geprüft.
+
+Browserprüfung in einem separaten Playwright-Testbrowser: echter WebGL-Start mit Pistole/0 Cr/allen Sperren; Händlerstand mit Auslage und Schild; Kaufmenü per E geöffnet und per Pfeiltasten bedient; Vela-7 für 2.400 Cr aus 3.000 Cr Testguthaben gekauft, erneut kostenlos ausgerüstet, Kauf einer unbezahlbaren Waffe abgelehnt. Nach Neuladen: Vela-7, 30 Schuss und 600 Cr korrekt wiederhergestellt. Screenshots lokal unter output/playwright/progression-start.png, weapon-shop.png, weapon-shop-purchase.png und merchant-world.png. Keine Asset-Fallbacks oder JavaScript-Fehler beobachtet; einzig die fehlende favicon.ico erzeugte 404-Meldungen. Kein allgemeiner FPS-Benchmark.
+
+103 automatisierte Tests bestanden, 0 Fehler. TypeScript-Prüfung und Produktionsbuild erfolgreich; bekannte Warnung zum grossen Babylon-Chunk bleibt bestehen.
+
 # Prüfstand
 
 ## 10. September 2026 – Storykampagne und Cutscenes

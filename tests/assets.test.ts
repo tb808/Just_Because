@@ -7,6 +7,11 @@ import { objectiveReached } from '../src/missions/MissionManager';
 import { traversalRoute } from '../src/data/missions';
 import { Vector3 } from '@babylonjs/core';
 
+test('nine weapon models have distinct geometry files from the licensed blaster kit', async () => {
+  const hashes = await Promise.all(Object.values(assets.weapons).map(async asset => createHash('sha256').update(await readFile(`public/${asset.path}`)).digest('hex')));
+  assert.equal(hashes.length, 9); assert.equal(new Set(hashes).size, 9);
+});
+
 test('every registered GLB is local, self-contained, and has a provenance hash', async () => {
   const inventory = JSON.parse(await readFile('public/assets/licenses/inventory.json', 'utf8'));
   for (const group of Object.values(assets)) for (const asset of Object.values(group)) {

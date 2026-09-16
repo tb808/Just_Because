@@ -3,6 +3,7 @@ import { stateLabels } from '../player/PlayerState';
 import type { CombatSystem } from '../combat/CombatSystem';
 import { settlements, worldLocations } from '../data/world';
 import type { Difficulty } from '../data/difficulty';
+import { equipmentLabels, equipmentRequirements, type Equipment, type EquipmentId } from '../player/EquipmentProgress';
 
 export class HUD {
   private root: HTMLElement;
@@ -33,12 +34,12 @@ export class HUD {
       <div class="pause-shade" id="shade"></div><section class="menu" id="menu" role="dialog" aria-modal="true" aria-labelledby="menu-title">
         <span class="eyebrow">CALA VENTRA / FREIER FALL</span><h1 id="menu-title">Jede Stimme<br>hinterlässt Spuren.</h1><p>Dein Bruder ist verschwunden. Das Netz, das du gebaut hast, hört die Insel ab. Kehre zurück und finde heraus, was ihr beide verschwiegen habt.</p><div class="story-menu-note">8 KAPITEL <i>·</i> EINE ENTSCHEIDUNG <i>·</i> DEINE INSEL</div>
         <div class="menu-actions"><button class="primary" id="start" disabled>INSEL WIRD GELADEN … <span>↗</span></button><button class="secondary new-game" id="new-game" disabled>NEUES SPIEL</button></div><p id="loading" class="loading" role="status">Gelände vorbereiten …</p>
-        <div class="controls"><div><kbd>W A S D</kbd><span>Bewegen / SUV fahren</span></div><div><kbd>SHIFT</kbd><span>Sprinten</span></div><div><kbd>SPACE</kbd><span>Springen / Seil lösen</span></div><div><kbd>F / C / Q</kbd><span>Haken / Wingsuit / Schirm</span></div><div><kbd>MAUS</kbd><span>Kamera · Mausrad für Zoom</span></div><div><kbd>ESC</kbd><span>Pause</span></div></div>
+        <div class="controls"><div><kbd>W A S D</kbd><span>Bewegen / SUV fahren</span></div><div><kbd>SHIFT</kbd><span>Sprinten</span></div><div><kbd>SPACE</kbd><span>Springen / Seil lösen</span></div><div><kbd>F / C / Q</kbd><span>Haken / Gleiter / Schirm · Storyfreischaltung</span></div><div><kbd>MAUS</kbd><span>Kamera · Mausrad für Zoom</span></div><div><kbd>ESC</kbd><span>Pause</span></div></div>
         <details><summary>Einstellungen & Credits</summary><label>Schwierigkeit<select id="difficulty"><option value="easy">Leicht</option><option value="medium" selected>Mittel</option><option value="hard">Schwer</option></select></label><small class="difficulty-note">Beeinflusst Treffsicherheit, Schaden und Lebenspunkte der Gegner.</small><label>Mausempfindlichkeit<input id="sensitivity" type="range" min="0.0007" max="0.005" step="0.0001" value="0.0022"></label><label>Renderqualität<select id="quality"><option value="1">Hoch</option><option value="1.25" selected>Ausgewogen</option><option value="1.6">Performance</option></select></label><p>3D-Modelle: Kenney · CC0<br>Eigene Welt und Traversal-Strukturen.<br>Movement-Prototyp: Kampf und Fahrzeuge folgen.</p><button id="reset" class="secondary">Zurück zum Startpunkt</button></details>
       </section><div class="toast" id="toast" role="status"></div>`;
-    this.root.insertAdjacentHTML('beforeend', `<div class="damage-vignette" id="damage-vignette"></div><div class="combat-top"><span id="alarm">KEIN ALARM</span><span id="score">0000 PUNKTE</span></div><div class="weapon-hud"><span id="weapon-name">STURMGEWEHR · VELA-7</span><div><strong id="ammo">30</strong><span id="reserve"> / 240</span></div><small id="reload-status">1 / 2 WAFFENWECHSEL · R NACHLADEN</small><div class="reload-track"><span id="reload-progress"></span></div></div>`);
+    this.root.insertAdjacentHTML('beforeend', `<div class="damage-vignette" id="damage-vignette"></div><div class="combat-top"><span id="alarm">KEIN ALARM</span><span id="score">0000 PUNKTE</span></div><div class="weapon-hud"><span id="weapon-name">PISTOLE · ROST-9</span><div><strong id="ammo">08</strong><span id="reserve"> / 64</span></div><small id="reload-status">1 / 2 WAFFENWECHSEL · R NACHLADEN</small><div class="reload-track"><span id="reload-progress"></span></div></div>`);
     const controls = this.root.querySelector('.controls')!;
-    controls.insertAdjacentHTML('beforeend', '<div><kbd>LMB / RMB</kbd><span>Schiessen / Zielen</span></div><div><kbd>1 / 2 · R</kbd><span>Waffenwechsel · Nachladen</span></div><div><kbd>E</kbd><span>Sprechen / Auftrag / Nachschub</span></div><div><kbd>M · B</kbd><span>Journal / Nächster Auftrag</span></div>');
+    controls.insertAdjacentHTML('beforeend', '<div><kbd>LMB / RMB</kbd><span>Schiessen / Zielen</span></div><div><kbd>1 / 2 · R</kbd><span>Waffenwechsel · Nachladen</span></div><div><kbd>E</kbd><span>Sprechen / Handeln / Auftrag / Nachschub</span></div><div><kbd>M · B</kbd><span>Journal / Nächster Auftrag</span></div>');
     const details = this.root.querySelector('details')!;
     details.querySelector('summary')!.insertAdjacentHTML('afterend', '<label>Lautstärke<input id="volume" type="range" min="0" max="1" step="0.05" value="0.35"></label>');
     const credit = details.querySelector('p')!; credit.textContent = '3D-Modelle: Kenney · CC0. Eigene Welt, Ausrüstung und synthetisierte Sounds. Geparkte und fahrende SUVs können übernommen werden.';
@@ -111,11 +112,11 @@ export class HUD {
     this.element('weapon-name').textContent = weapon.definition.name;
     this.element('ammo').textContent = String(weapon.ammo).padStart(2, '0');
     this.element('reserve').textContent = ` / ${weapon.reserve}`;
-    this.element('reload-status').textContent = weapon.reloading ? `NACHLADEN · ${weapon.reloadRemaining.toFixed(1)} S` : '1 / 2 WAFFENWECHSEL · R NACHLADEN';
+    this.element('reload-status').textContent = weapon.reloading ? `NACHLADEN · ${weapon.reloadRemaining.toFixed(1)} S` : `1 / 2 ZURÜCK / VOR · ${combat.weapons.owned.size} ${combat.weapons.owned.size === 1 ? 'WAFFE' : 'WAFFEN'} · R NACHLADEN`;
     this.element('reload-progress').style.width = `${weapon.reloadProgress * 100}%`;
     this.element('alarm').textContent = combat.liberated ? 'INSEL BEFREIT' : combat.heat ? `ALARM ${'▮'.repeat(combat.heat)}${'▯'.repeat(3 - combat.heat)}` : 'KEIN ALARM';
     this.element('alarm').classList.toggle('wanted', combat.heat > 0);
-    this.element('score').textContent = `${String(combat.score).padStart(4, '0')} PUNKTE`;
+    this.element('score').textContent = `${combat.money.toLocaleString('de-CH')} Cr · ${combat.score.toLocaleString('de-CH')} PUNKTE`;
     this.element('reticle').classList.toggle('hit', combat.hitFlash > 0);
     this.element('reticle').classList.toggle('kill', combat.killFlash && combat.hitFlash > 0);
     this.element('damage-vignette').style.opacity = String(Math.min(0.7, combat.hurtFlash * 2));
@@ -134,5 +135,16 @@ export class HUD {
     this.element('location-detail').textContent = `${clock} · ${town ? mood : landmark ? 'SEHENSWÜRDIGKEIT' : 'DIE OFFENE INSEL'}`;
     const direction = ((player.visual.rotation.y*180/Math.PI)%360+360)%360;
     this.element('world-heading').textContent = `${['N','NO','O','SO','S','SW','W','NW'][Math.round(direction/45)%8]} · ${Math.round(direction)}°`;
+  }
+  updateEquipment(equipment: Equipment, player: Player) {
+    for (const id of Object.keys(equipment) as EquipmentId[]) {
+      const element = this.element(`ability-${id}`);
+      element.classList.toggle('locked', !equipment[id]);
+      element.title = equipment[id] ? equipmentLabels[id] : equipmentRequirements[id];
+      element.querySelector('span')!.textContent = equipment[id] ? equipmentLabels[id] : `${equipmentLabels[id]} · GESPERRT`;
+    }
+    if (player.state === 'IN_VEHICLE' || player.state === 'WINGSUIT') return;
+    const unlocked = [equipment.grapple ? 'F Greifhaken' : '', equipment.parachute ? 'Q Fallschirm' : '', equipment.wingsuit ? 'C Gleiter' : ''].filter(Boolean);
+    this.hint.textContent = [player.state === 'ON_FOOT' ? 'SHIFT sprinten · SPACE springen' : 'Im freien Fall', ...unlocked, 'U befreien'].join(' · ');
   }
 }

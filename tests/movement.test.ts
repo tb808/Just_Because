@@ -26,6 +26,7 @@ function fixture() {
   const player = new Player(scene); player.position.set(0, 0.91, 0);
   const camera = new ThirdPersonCamera(scene, player, input); camera.yaw = 0; camera.pitch = 0; camera.update(0, true);
   const controller = new PlayerMovement(player, input, camera, scene, new Vector3(0, 0.91, 0));
+  controller.equipment = { grapple: true, parachute: true, wingsuit: true };
   scene.meshes.forEach(m => m.computeWorldMatrix(true));
   new CollisionQueries(scene);
   const step = (seconds: number) => { for (let i = 0; i < Math.round(seconds / movement.fixedStep); i++) controller.update(movement.fixedStep); };
@@ -114,6 +115,19 @@ test('camera repairs invalid orbit values instead of producing a broken view', (
   assert.ok(Number.isFinite(f.camera.yaw)); assert.ok(Number.isFinite(f.camera.pitch));
   assert.ok(f.camera.camera.position.asArray().every(Number.isFinite));
   assert.ok(Vector3.Distance(f.camera.camera.position, f.player.position) > 1); f.dispose();
+});
+test('vehicle camera snaps behind the SUV and ignores its own collider',()=>{
+  const f=fixture();f.player.state='IN_VEHICLE';f.player.position.set(0,1.15,0);f.player.visual.rotation.y=0;
+  const car=MeshBuilder.CreateBox('vehicle-collider',{width:2.4,height:2,depth:4.8},f.scene);
+  car.position.set(0,1.2,0);car.checkCollisions=true;car.metadata={cameraIgnore:true};car.computeWorldMatrix(true);
+  f.camera.yaw=0;f.camera.pitch=-.18;f.camera.update(0,true);
+  assert.ok(f.camera.camera.position.z < -9,'camera should sit behind the SUV');
+  assert.ok(Math.abs(f.camera.camera.position.x)<.05,'vehicle view should be centered instead of shoulder-offset');
+  assert.ok(f.camera.camera.position.y>f.player.position.y+1,'vehicle view should be elevated');f.dispose();
+});
+test('vehicle camera recenters toward the direction of travel when look input stops',()=>{
+  const f=fixture();f.player.state='IN_VEHICLE';f.player.visual.rotation.y=Math.PI/2;f.camera.yaw=0;f.camera.pitch=-.18;
+  f.camera.update(.5);assert.ok(f.camera.yaw>.8&&f.camera.yaw<Math.PI/2);f.dispose();
 });
 test('grapple acquires a surface, accelerates, and releases momentum', () => {
   const f = fixture(); const wall = MeshBuilder.CreateBox('anchor-wall', { width: 10, height: 25, depth: 1 }, f.scene);

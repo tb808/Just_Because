@@ -143,7 +143,8 @@ function buildMarket(g:StaticGeometry,cx:number,cz:number,color:string) {
     g.box(x,y+.7,z,6,1.4,2.4,'#956d49',true);g.box(x,y+3.2,z,7,.18,4,color);
     for(const dx of [-3,3])g.box(x+dx,y+1.6,z,.13,3.2,.13,'#c7b090',true);
     for(let stripe=-2.8;stripe<=3;stripe+=1)g.box(x+stripe,y+3.31,z,.35,.04,4,'#e9e0bd');
-    for(let crate=-2;crate<=2;crate+=2) {g.box(x+crate,y+1.5,z,1.7,.35,1.7,'#9b8669');for(let fruit=0;fruit<3;fruit++)g.cylinder(x+crate-.5+fruit*.5,y+1.8,z,.22,.3,crate===0?'#d3ad66':crate<0?'#8ba34b':'#c77c56',false,.16,5);}
+      // Reserve one counter in every town for the weapon merchant's GLB display.
+      if (!(side === 1 && dz === 13)) for(let crate=-2;crate<=2;crate+=2) {g.box(x+crate,y+1.5,z,1.7,.35,1.7,'#9b8669');for(let fruit=0;fruit<3;fruit++)g.cylinder(x+crate-.5+fruit*.5,y+1.8,z,.22,.3,crate===0?'#d3ad66':crate<0?'#8ba34b':'#c77c56',false,.16,5);}
     g.box(x+side*4,y+.55,z,1.2,1.1,1.2,'#9b8669',true);
   }
   // Pick a pocket off the connected traffic lanes and both civilian loops.

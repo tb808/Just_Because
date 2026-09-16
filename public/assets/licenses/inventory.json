@@ -143,6 +143,83 @@
     "sha256": "cf70ab883621251e7f1d86cf274b2af8cb106bd09c6f7a471bbd72bcde5eecc6"
   },
   {
+    "file": "weapons/pistol.glb",
+    "original": "blaster-a.glb",
+    "author": "Kenney",
+    "page": "https://kenney.nl/assets/blaster-kit",
+    "zip": "https://kenney.nl/media/pages/assets/blaster-kit/261d80a716-1753959510/kenney_blaster-kit_2.1.zip",
+    "license": "CC0-1.0",
+    "checked": "2026-09-07",
+    "bytes": 55204,
+    "sha256": "0efc7494c1f59f786c80742b4c8b06054f2fcf321c6cd669e59b634225a9fba6"
+  },
+  {
+    "file": "weapons/compact.glb",
+    "original": "blaster-b.glb",
+    "author": "Kenney",
+    "page": "https://kenney.nl/assets/blaster-kit",
+    "zip": "https://kenney.nl/media/pages/assets/blaster-kit/261d80a716-1753959510/kenney_blaster-kit_2.1.zip",
+    "license": "CC0-1.0",
+    "checked": "2026-09-07",
+    "bytes": 44636,
+    "sha256": "bd3c49d9c255e12cf7c4e2f967371fd110f44c861ffbff84969604b0abbec6d4"
+  },
+  {
+    "file": "weapons/smg.glb",
+    "original": "blaster-c.glb",
+    "author": "Kenney",
+    "page": "https://kenney.nl/assets/blaster-kit",
+    "zip": "https://kenney.nl/media/pages/assets/blaster-kit/261d80a716-1753959510/kenney_blaster-kit_2.1.zip",
+    "license": "CC0-1.0",
+    "checked": "2026-09-07",
+    "bytes": 46488,
+    "sha256": "070c566e3177c62590ab86c0372547c0a33f58ea11473ed203f44d31e3de6b9e"
+  },
+  {
+    "file": "weapons/shotgun.glb",
+    "original": "blaster-d.glb",
+    "author": "Kenney",
+    "page": "https://kenney.nl/assets/blaster-kit",
+    "zip": "https://kenney.nl/media/pages/assets/blaster-kit/261d80a716-1753959510/kenney_blaster-kit_2.1.zip",
+    "license": "CC0-1.0",
+    "checked": "2026-09-07",
+    "bytes": 55292,
+    "sha256": "8562fa86483da0e6b1824a93c3557826ba1db5bd227c847d805903b51f14c2ad"
+  },
+  {
+    "file": "weapons/carbine.glb",
+    "original": "blaster-f.glb",
+    "author": "Kenney",
+    "page": "https://kenney.nl/assets/blaster-kit",
+    "zip": "https://kenney.nl/media/pages/assets/blaster-kit/261d80a716-1753959510/kenney_blaster-kit_2.1.zip",
+    "license": "CC0-1.0",
+    "checked": "2026-09-07",
+    "bytes": 82644,
+    "sha256": "2adc215587b0a9a01ac3901444e5330f8dabb19466baa880509f965df8c0bde5"
+  },
+  {
+    "file": "weapons/marksman.glb",
+    "original": "blaster-g.glb",
+    "author": "Kenney",
+    "page": "https://kenney.nl/assets/blaster-kit",
+    "zip": "https://kenney.nl/media/pages/assets/blaster-kit/261d80a716-1753959510/kenney_blaster-kit_2.1.zip",
+    "license": "CC0-1.0",
+    "checked": "2026-09-07",
+    "bytes": 66496,
+    "sha256": "323d2cf71a6bc00c067544236588b26c1a3fc940e3dc5809988041cdc806d807"
+  },
+  {
+    "file": "weapons/heavy.glb",
+    "original": "blaster-i.glb",
+    "author": "Kenney",
+    "page": "https://kenney.nl/assets/blaster-kit",
+    "zip": "https://kenney.nl/media/pages/assets/blaster-kit/261d80a716-1753959510/kenney_blaster-kit_2.1.zip",
+    "license": "CC0-1.0",
+    "checked": "2026-09-07",
+    "bytes": 48860,
+    "sha256": "7234ede9a41b34df15719d850ab39acdd654131ef772460e87469f64b0788ef7"
+  },
+  {
     "file": "weapons/launcher.glb",
     "original": "blaster-j.glb",
     "author": "Kenney",

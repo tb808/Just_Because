@@ -41,9 +41,10 @@ export class VehicleManager {
     if(this.player.state!=='ON_FOOT')return;
     const vehicle=this.nearest();if(!vehicle)return;
     this.onEnter();this.active=vehicle;vehicle.occupied=true;vehicle.root.setEnabled(true);vehicle.collider.setEnabled(true);
+    vehicle.collider.metadata={...vehicle.collider.metadata,cameraIgnore:true};
     this.speed=0;this.lastSafePosition=vehicle.root.position.clone();this.lastSafeRotation=vehicle.root.rotation.y;
     this.player.state='IN_VEHICLE';this.player.velocity.setAll(0);this.player.visual.setEnabled(false);this.player.body.checkCollisions=false;
-    this.syncPlayer();this.camera.yaw=vehicle.root.rotation.y;this.camera.pitch=-.08;this.camera.update(0,true);
+    this.syncPlayer();this.camera.yaw=vehicle.root.rotation.y;this.camera.pitch=-.18;this.camera.update(0,true);
     this.onMessage('SUV gestartet · W/S Gas und Bremse · A/D lenken · E aussteigen');
     return 'entered';
   }
@@ -77,7 +78,7 @@ export class VehicleManager {
   reset() {
     if(this.active)this.exit(false);
     for(const vehicle of this.world.vehicles) {
-      vehicle.occupied=false;vehicle.root.position.copyFrom(vehicle.initialPosition);vehicle.root.rotation.y=vehicle.initialRotationY;
+      vehicle.occupied=false;vehicle.collider.metadata={...vehicle.collider.metadata,cameraIgnore:false};vehicle.root.position.copyFrom(vehicle.initialPosition);vehicle.root.rotation.y=vehicle.initialRotationY;
       this.syncCollider(vehicle);
     }
     this.speed=0;
@@ -97,7 +98,7 @@ export class VehicleManager {
 
   private exit(placePlayer=true) {
     const vehicle=this.active;if(!vehicle)return;
-    vehicle.occupied=false;this.active=undefined;this.speed=0;
+    vehicle.occupied=false;vehicle.collider.metadata={...vehicle.collider.metadata,cameraIgnore:false};this.active=undefined;this.speed=0;
     this.player.visual.setEnabled(true);this.player.body.checkCollisions=true;this.player.velocity.setAll(0);this.player.state='FALLING';
     if(placePlayer) {
       const right=new Vector3(Math.cos(vehicle.root.rotation.y),0,-Math.sin(vehicle.root.rotation.y));
