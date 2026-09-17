@@ -9,6 +9,7 @@ import { terrainHeight } from '../world/Terrain';
 import { territories, territoryAt, territoryForSettlement } from '../data/territories';
 import { weaponMerchants } from '../world/WeaponMerchants';
 import { biomeRegions, landscapeSites } from '../data/biomes';
+import type { DynamicEventView } from '../world/DynamicEvents';
 
 type AtlasView = 'world' | 'journal' | 'travel';
 const escape = (value: string) => value.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
@@ -103,6 +104,7 @@ export class WorldMap {
             ${settlements.map(place => `<g class="map-town occupied" id="town-${place.id}" data-territory="${territoryForSettlement(place.id)?.baseId ?? ''}" transform="translate(${place.center[0]},${-place.center[1]})"><rect x="-20" y="-20" width="40" height="40" rx="6"/><text x="31" y="-28">${escape(place.name)}</text></g>`).join('')}
             ${bases.map((base,i) => `<g class="map-base" id="map-${base.id}" transform="translate(${base.flag[0]},${-base.flag[2]})"><circle r="27"/><text class="base-number" text-anchor="middle" y="11">${i+1}</text><title>${escape(base.name)}</title></g>`).join('')}
             ${weaponMerchants.map(merchant => `<g class="map-merchant" transform="translate(${merchant.position[0]},${-merchant.position[2]})"><circle r="16"/><text text-anchor="middle" y="10">$</text><title>${escape(merchant.name)} · E vor dem östlichen Marktstand</title></g>`).join('')}
+            <g id="map-event-marker" class="map-event" hidden><circle r="24"/><path d="M-5 -17L11 -17L3 -3L12 -3L-9 20L-2 5L-12 5Z"/><title id="map-event-title">Dynamisches Ereignis</title></g>
             <g id="map-objective-marker"><circle r="48"/><path d="M 0 -25 L 20 0 L 0 25 L -20 0 Z"/></g>
           </g>
           <path d="${landPath}" class="map-coast-outline"/>
@@ -137,7 +139,7 @@ export class WorldMap {
     else if (this.view === 'travel') this.onTravel(row.id);
     else this.onTrackBase(row.id);
   }
-  update(manager: BaseManager, player: Player, missions: MissionManager, exploration: Exploration, showCombat: boolean) {
+  update(manager: BaseManager, player: Player, missions: MissionManager, exploration: Exploration, showCombat: boolean, event?: DynamicEventView) {
     const state = manager.tracked, base = state.definition;
     const target = !showCombat ? missions.mapTarget : undefined;
     const point = target?.position ?? base.flag, title = target?.title ?? base.name;
@@ -147,6 +149,9 @@ export class WorldMap {
     this.text('map-mini-destination', `${title} · ${distance >= 1000 ? `${(distance/1000).toFixed(1)} km` : `${distance} m`}`);
     this.root.querySelector('#map-player')!.setAttribute('transform', `translate(${player.position.x},${-player.position.z}) rotate(${player.visual.rotation.y*180/Math.PI})`);
     this.root.querySelector('#map-objective-marker')!.setAttribute('transform', `translate(${point[0]},${-point[2]})`);
+    const eventMarker=this.root.querySelector<SVGGElement>('#map-event-marker')!;
+    eventMarker.toggleAttribute('hidden',!event?.discovered);
+    if(event?.discovered){eventMarker.setAttribute('transform',`translate(${event.position[0]},${-event.position[2]})`);this.text('map-event-title',event.title);}
     this.root.querySelector('svg')!.setAttribute('viewBox', this.open ? `${-worldConfig.size/2} ${-worldConfig.size/2} ${worldConfig.size} ${worldConfig.size}` : `${player.position.x-420} ${-player.position.z-420} 840 840`);
     if (this.fogRevision !== exploration.revision) {
       this.fogRevision = exploration.revision;
@@ -189,7 +194,7 @@ export class WorldMap {
         return {id:b.definition.id,title:territory?.name ?? b.definition.name,description:`${b.definition.name} · ${b.definition.description}`,
           label:`${b.guards}/${b.definition.guards.length} Wachen · ${b.tanks}/${b.definition.tanks.length} Tanks`,status:b.liberated?'BEFREIT':'BESETZT'};
       });
-      this.text('atlas-help', 'Rot: besetzt. Blau: befreit. Goldene $ markieren Waffenhändler an den Stadtmärkten. Vor dem östlichen Stand mit E handeln.');
+      this.text('atlas-help', 'Rot: besetzt. Blau: befreit. Goldene $ markieren Waffenhändler. Türkise Blitze zeigen entdeckte dynamische Ereignisse.');
     }
     this.selection = Math.min(this.selection, Math.max(0,this.rows.length-1));
     const signature = JSON.stringify([this.view,this.selection,this.rows.map(r=>[r.id,r.status,r.label,r.description])]);

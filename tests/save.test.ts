@@ -59,3 +59,15 @@ test('cutscene queues and the broadcast decision are validated optional save fie
     assert.equal(isGameSave(withStory(invalid)), false);
   }
 });
+
+test('dynamic world events are optional and reject malformed saved progress', () => {
+  const withEvents=(events:unknown)=>({...valid,world:{discoveredSettlementIds:[],elapsed:20,events}});
+  assert.equal(isGameSave(withEvents({active:{siteId:'west-bridge-call',remaining:280,progress:2.5,discovered:true},cooldown:0,sequence:1,completed:0})),true);
+  assert.equal(isGameSave(withEvents({cooldown:55,sequence:2,completed:1})),true);
+  for(const invalid of [
+    {active:{siteId:4,remaining:20,progress:0,discovered:true},cooldown:0,sequence:1,completed:0},
+    {active:{siteId:'west-bridge-call',remaining:-1,progress:0,discovered:true},cooldown:0,sequence:1,completed:0},
+    {cooldown:-1,sequence:1,completed:0},
+    {cooldown:0,sequence:1.5,completed:0},
+  ])assert.equal(isGameSave(withEvents(invalid)),false);
+});

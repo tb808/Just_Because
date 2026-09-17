@@ -1,3 +1,9 @@
+## 17. September 2026 – dynamische Ereignisse
+
+108 automatisierte Codetests bestanden; TypeScript und Vite-Produktionsbuild erfolgreich. Neun wechselnde Ereignisorte decken Notrufe, Versorgungskisten und Funksignale ab. Geprüft sind Entdeckung in der Nähe, Vor-Ort-Fortschritt, einmalige Belohnung sowie Wiederherstellung eines laufenden Ereignisses aus dem Spielstand.
+
+Browserprüfung mit echtem WebGL: Das erste Ereignis erscheint nahe dem Startpunkt als eigenes HUD-Feld mit Entfernung, Restzeit und Belohnung. Der türkisfarbene Blitz ist gleichzeitig auf der Minikarte sichtbar. Keine neue Anwendungsausnahme; die bekannte `favicon.ico`-404 bleibt bestehen.
+
 ## 16. September 2026 – Biome und unterschiedliche Stadtgrundrisse
 
 105 automatisierte Codetests bestanden, TypeScript und Vite-Produktionsbuild erfolgreich. Keine Browserprüfung, Screenshots oder visuellen Tests in diesem Arbeitsschritt. Die bekannte Warnung zum grossen Babylon-Chunk bleibt bestehen; die tatsächliche Darstellung und GPU-Performance sind nicht geprüft.

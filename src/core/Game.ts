@@ -25,6 +25,7 @@ import { CutsceneDirector } from '../story/CutsceneDirector';
 import { equipmentLabels, type EquipmentId, storyEquipment } from '../player/EquipmentProgress';
 import { buildWeaponMerchants, nearbyWeaponMerchant } from '../world/WeaponMerchants';
 import { WeaponShop } from '../ui/WeaponShop';
+import { DynamicEvents } from '../world/DynamicEvents';
 
 export class Game {
   private engine: Engine;
@@ -37,6 +38,7 @@ export class Game {
   private controller: PlayerMovement;
   private vehicles: VehicleManager;
   private missions: MissionManager;
+  private events: DynamicEvents;
   private story: CutsceneDirector;
   private combat: CombatSystem;
   private showCombat = false;
@@ -66,15 +68,19 @@ export class Game {
     this.controller = new PlayerMovement(this.player, this.input, this.camera, this.scene, this.world.spawn);
     this.vehicles = new VehicleManager(this.scene,this.world,this.player,this.input,this.camera);
     this.missions = new MissionManager(this.scene);
+    this.events = new DynamicEvents(this.scene);
     this.story = new CutsceneDirector(this.scene, this.input);
     this.story.onFinish = (id, choice) => {
       this.missions.finishScene(id, choice); this.player.visual.setEnabled(true);
       this.missions.setCinematic(false); this.camera.update(0, true); this.accumulator = 0;
+      this.events.setHidden(false);
       this.world.chunks.update(1, this.player.position); this.syncEquipment(); this.saveGame();
       if (id === 'ending') this.hud.storyEnding(this.missions.choice);
       else this.hud.notify(`Weiter: ${this.missions.objective?.title ?? 'Cala Ventra erkunden'}`);
     };
     this.combat = new CombatSystem(this.scene, this.player, this.input, this.camera, this.world);
+    this.events.onMessage = message => this.hud.notify(message);
+    this.events.onReward = amount => this.combat.reward(amount);
     this.combat.onMessage = message => this.hud.notify(message);
     this.combat.onRespawn = () => this.controller.reset();
     this.combat.onDeath = () => { this.vehicles.leaveForDeath(); this.controller.cancelAbilities(); };
@@ -134,7 +140,7 @@ export class Game {
     else this.player.position.copyFrom(this.world.spawn);
     this.syncEquipment(false);
     this.hud.setDifficulty(this.combat.difficulty);
-    if (save?.world) { this.exploration.restore(save.world.discoveredSettlementIds, save.world.surveyedMapCells); this.atmosphere.elapsed = save.world.elapsed; }
+    if (save?.world) { this.exploration.restore(save.world.discoveredSettlementIds, save.world.surveyedMapCells); this.atmosphere.elapsed = save.world.elapsed; this.events.restore(save.world.events); }
     this.world.chunks.update(1,this.player.position); this.atmosphere.update(0,this.player.position);
     this.player.state = 'FALLING'; this.player.velocity.setAll(0); this.camera.update(0, true);
     await this.scene.whenReadyAsync(); this.scene.render(); this.ready = true;
@@ -193,10 +199,14 @@ export class Game {
         }
       }
       if (!this.player.dead && this.input.justPressed('interact')) {
-        const nearSupply=this.combat.nearSupply,event=this.vehicles.interact();
-        if(event) {this.input.take('interact');if(event==='entered'&&nearSupply)this.combat.resupply('Nachschub aufgenommen · SUV gestartet · W/S fahren · A/D lenken · E aussteigen');}
+        if(this.events.isInside&&this.player.state==='ON_FOOT')this.input.take('interact');
+        else {
+          const nearSupply=this.combat.nearSupply,event=this.vehicles.interact();
+          if(event) {this.input.take('interact');if(event==='entered'&&nearSupply)this.combat.resupply('Nachschub aufgenommen · SUV gestartet · W/S fahren · A/D lenken · E aussteigen');}
+        }
       }
       this.combat.update(dt);
+      this.events.update(dt,this.player.position,this.input.down('interact'),!this.player.dead&&this.player.state==='ON_FOOT');
       this.saveTimer += dt;
       if (this.saveTimer >= 2) { this.saveGame(); this.saveTimer = 0; }
       if (this.input.take('nextBase')) { this.combat.bases.next(); this.showCombat=true; }
@@ -212,11 +222,13 @@ export class Game {
         this.hud.updateEquipment(this.controller.equipment, this.player);
         this.hud.updateCombat(this.combat);
         this.hud.updateWorld(this.player, this.atmosphere?.clock ?? '08:30', this.combat.living.activitySummary);
+        this.hud.updateEvent(this.events.view);
         const nearbyBase = this.combat.bases.nearby(this.player.position);
         const interactionPrompt = this.missions.interactionPrompt;
         const vehiclePrompt = this.vehicles.interactionPrompt;
         if (interactionPrompt) this.hud.element('hint').textContent = interactionPrompt;
         else if (merchant && this.player.state === 'ON_FOOT') this.hud.element('hint').textContent = `E · ${merchant.name}${this.combat.heat ? ' · Bei Alarm geschlossen' : ''}`;
+        else if(this.events.view?.inside&&this.player.state==='ON_FOOT') this.hud.element('hint').textContent=`E halten · ${this.events.view.instruction} · ${Math.round(this.events.view.progress*100)} %`;
         else if(vehiclePrompt) this.hud.element('hint').textContent=vehiclePrompt;
         const target = this.controller.equipment.grapple ? this.controller.grapple.target() : undefined; this.hud.element('reticle').classList.toggle('valid', !!target);
         this.hud.element('target-label').textContent = target ? `F · ${Math.round(target.distance)} M` : '';
@@ -241,6 +253,7 @@ export class Game {
     if (this.player.dead) return false;
     if (!this.story.active && this.missions.pendingScene) {
       this.story.start(this.missions.pendingScene, this.missions.choice);
+      this.events.setHidden(true);
       this.showCombat = false; this.accumulator = 0; this.missions.setCinematic(true);
       this.player.visual.setEnabled(false); this.world.chunks.update(1, this.story.position);
       this.saveGame();
@@ -250,7 +263,7 @@ export class Game {
     if (this.story.active) this.atmosphere?.update(0, this.story.position);
     return true;
   }
-  private updateMap() { this.map.update(this.combat.bases,this.player,this.missions,this.exploration,this.showCombat); }
+  private updateMap() { this.map.update(this.combat.bases,this.player,this.missions,this.exploration,this.showCombat,this.events.view); }
   private syncEquipment(notify = true) {
     const next = storyEquipment(this.missions.saveState());
     const unlocked = (Object.keys(next) as EquipmentId[]).filter(id => next[id] && !this.controller.equipment[id]);
@@ -275,16 +288,16 @@ export class Game {
   private saveGame() {
     if (!this.ready || this.player.dead) return;
     const position = this.player.position.asArray() as [number, number, number];
-    const save: GameSave = { version: 1, savedAt: Date.now(), player: position, missions: this.missions.saveState(), combat: this.combat.saveState(), world: {discoveredSettlementIds:[...this.exploration.discovered],surveyedMapCells:[...this.exploration.surveyed],elapsed:this.atmosphere?.elapsed??0} };
+    const save: GameSave = { version: 1, savedAt: Date.now(), player: position, missions: this.missions.saveState(), combat: this.combat.saveState(), world: {discoveredSettlementIds:[...this.exploration.discovered],surveyedMapCells:[...this.exploration.surveyed],elapsed:this.atmosphere?.elapsed??0,events:this.events.saveState()} };
     storeGameSave(save);
   }
   private resetProgress() {
     this.shop.close(); this.map.close();
     this.story.stop(); this.player.visual.setEnabled(true);
-    clearGameSave(); this.vehicles.reset(); this.controller.reset(); this.missions.reset(); this.combat.reset(); this.exploration.reset();
+    clearGameSave(); this.vehicles.reset(); this.controller.reset(); this.missions.reset(); this.events.reset(); this.combat.reset(); this.exploration.reset();
     this.syncEquipment(false);
     if (this.atmosphere) this.atmosphere.elapsed = 0;
     this.showCombat = false; this.world.chunks.update(1, this.player.position); this.atmosphere?.update(0, this.player.position); this.saveGame();
   }
-  dispose() { this.saveGame(); this.story.dispose(); this.abort.abort(); this.input.dispose(); this.combat.dispose(); this.atmosphere?.dispose(); this.engine.stopRenderLoop(); this.scene.dispose(); this.assetManager.dispose(); this.engine.dispose(); }
+  dispose() { this.saveGame(); this.story.dispose(); this.events.dispose(); this.abort.abort(); this.input.dispose(); this.combat.dispose(); this.atmosphere?.dispose(); this.engine.stopRenderLoop(); this.scene.dispose(); this.assetManager.dispose(); this.engine.dispose(); }
 }

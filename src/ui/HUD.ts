@@ -4,6 +4,7 @@ import type { CombatSystem } from '../combat/CombatSystem';
 import { settlements, worldLocations } from '../data/world';
 import type { Difficulty } from '../data/difficulty';
 import { equipmentLabels, equipmentRequirements, type Equipment, type EquipmentId } from '../player/EquipmentProgress';
+import type { DynamicEventView } from '../world/DynamicEvents';
 
 export class HUD {
   private root: HTMLElement;
@@ -50,6 +51,7 @@ export class HUD {
     this.root.insertAdjacentHTML('beforeend','<div class="world-compass"><span>W</span><b id="world-heading">NORDOST</b><span>O</span></div>');
     this.root.querySelector('.mission .eyebrow')!.innerHTML = '<span class="live-dot"></span> <span id="mission-chapter">I · DIE RÜCKKEHR</span>';
     this.root.insertAdjacentHTML('beforeend', '<aside class="story-radio" hidden aria-live="polite"><span>FUNK / VELA</span><strong></strong><p></p></aside><aside class="story-complete" hidden><span>GESCHICHTE ABGESCHLOSSEN</span><h2>Morgen bleibt jemand hier.</h2><p></p><small>Die Insel bleibt offen · M Journal · TAB Atlas</small></aside>');
+    this.root.insertAdjacentHTML('beforeend', '<aside class="dynamic-event" id="dynamic-event" hidden aria-live="polite"><span id="event-status">DYNAMISCHES EREIGNIS</span><h3 id="event-title"></h3><p id="event-detail"></p><div class="event-progress"><i id="event-progress"></i></div><small id="event-meta"></small></aside>');
     this.panel = this.element('menu'); this.start = this.element('start') as HTMLButtonElement; this.newGame = this.element('new-game') as HTMLButtonElement;
     this.status = this.element('loading'); this.state = this.element('state'); this.speed = this.element('speed');
     this.altitude = this.element('altitude'); this.metrics = this.element('metrics'); this.hint = this.element('hint');
@@ -97,6 +99,17 @@ export class HUD {
   notify(text: string) {
     clearTimeout(this.toastTimer); const toast = this.element('toast'); toast.textContent = text; toast.classList.add('visible');
     this.toastTimer = setTimeout(() => toast.classList.remove('visible'), 5000);
+  }
+  updateEvent(event?: DynamicEventView) {
+    const panel=this.element('dynamic-event');
+    if(!event?.discovered){panel.hidden=true;return;}
+    panel.hidden=false;panel.classList.toggle('inside',event.inside);
+    const distance=event.distance>=1000?`${(event.distance/1000).toFixed(1)} km`:`${Math.round(event.distance)} m`;
+    this.element('event-status').textContent=event.inside?'EREIGNISORT ERREICHT':event.near?'DYNAMISCHES EREIGNIS IN DER NÄHE':'DYNAMISCHES EREIGNIS';
+    this.element('event-title').textContent=event.title;
+    this.element('event-detail').textContent=event.inside?event.instruction:event.description;
+    (this.element('event-progress') as HTMLElement).style.width=`${Math.round(event.progress*100)}%`;
+    this.element('event-meta').textContent=`${distance} · ${Math.ceil(event.remaining)} s · +${event.reward.toLocaleString('de-CH')} Cr`;
   }
   update(player: Player, fps: number, chunks: number) {
     this.root.dataset.position = player.position.asArray().map(n => n.toFixed(2)).join(',');

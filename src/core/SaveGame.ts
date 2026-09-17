@@ -1,6 +1,7 @@
 import { isWeaponId, type WeaponId } from '../data/weapons';
 import type { MissionSaveState } from '../missions/MissionProgress';
 import { isDifficulty, type Difficulty } from '../data/difficulty';
+import type { DynamicEventSaveState } from '../world/DynamicEvents';
 
 export const saveKey = 'cala-ventra.save.v1';
 
@@ -30,7 +31,7 @@ export interface GameSave {
   player: [number, number, number];
   missions: MissionSaveState;
   combat: CombatSaveState;
-  world?: { discoveredSettlementIds: string[]; surveyedMapCells?: string[]; elapsed: number };
+  world?: { discoveredSettlementIds: string[]; surveyedMapCells?: string[]; elapsed: number; events?: DynamicEventSaveState };
 }
 
 type StorageLike = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
@@ -42,6 +43,15 @@ const missionRecordValid = (value: unknown) => {
   return finite(record.step) && Number.isInteger(record.step) && record.step >= 0
     && finite(record.elapsed) && record.elapsed >= 0 && finite(record.hold) && record.hold >= 0
     && typeof record.complete === 'boolean';
+};
+const dynamicEventsValid = (value: unknown) => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  const state=value as {active?:unknown;cooldown?:unknown;sequence?:unknown;completed?:unknown};
+  if(!finite(state.cooldown)||state.cooldown<0||!finite(state.sequence)||state.sequence<0||!Number.isInteger(state.sequence)||!finite(state.completed)||state.completed<0||!Number.isInteger(state.completed))return false;
+  if(state.active===undefined)return true;
+  if(!state.active||typeof state.active!=='object'||Array.isArray(state.active))return false;
+  const active=state.active as {siteId?:unknown;remaining?:unknown;progress?:unknown;discovered?:unknown};
+  return typeof active.siteId==='string'&&finite(active.remaining)&&active.remaining>=0&&finite(active.progress)&&active.progress>=0&&typeof active.discovered==='boolean';
 };
 
 export function isGameSave(value: unknown): value is GameSave {
@@ -58,7 +68,8 @@ export function isGameSave(value: unknown): value is GameSave {
       && Object.values(missions.records).every(missionRecordValid))
     && (save.world === undefined || !!save.world && stringArray(save.world.discoveredSettlementIds)
       && (save.world.surveyedMapCells === undefined || stringArray(save.world.surveyedMapCells))
-      && finite(save.world.elapsed) && save.world.elapsed >= 0)
+      && finite(save.world.elapsed) && save.world.elapsed >= 0
+      && (save.world.events===undefined||dynamicEventsValid(save.world.events)))
     && !!combat && finite(combat.score) && finite(combat.health) && finite(combat.selectedBase)
     && (combat.money === undefined || finite(combat.money) && combat.money >= 0 && Number.isSafeInteger(combat.money))
     && (combat.difficulty === undefined || isDifficulty(combat.difficulty))

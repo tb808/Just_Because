@@ -44,6 +44,8 @@ E wird zuerst einem erreichbaren Missionsziel angeboten; nur bei tatsächlicher 
 
 `Exploration.ts` entdeckt Siedlungen anhand der Spielerposition und speichert stabile Orts-IDs. Schnellreise erfordert einen entdeckten Ort, Bodenkontakt, keinen Alarm und keinen aktiven Zeitlauf. Als Ziel dient ein freier Punkt am Marktplatz. Kamera, Geschwindigkeit, Luftfähigkeiten und aktive Bezirke werden beim Reisen konsistent aktualisiert.
 
+`DynamicEvents.ts` rotiert savebare Weltereignisse zwischen neun geprüften Orten. Das nächstgelegene erste Ereignis macht das System früh sichtbar; spätere Ereignisse wechseln nach Abschluss oder Ablauf und besitzen eine Abklingzeit. Entdeckung, Restzeit und Interaktionsfortschritt werden gespeichert. Ein eigener 3D-Marker, ein Nähefeld im HUD sowie ein dynamischer Atlasmarker teilen denselben Ereigniszustand.
+
 ## Verifikation
 
 Tests prüfen Logik, tatsächliche Geometriedaten, Kollisionsgrenzen, Speicherstände und Komponentenaufbau über Babylon NullEngine. Es wird weder `scene.render()` ausgeführt noch ein Bild verglichen. Die verlangte visuelle Abnahme bleibt beim Nutzer. TypeScript-Prüfung und Vite-Produktionsbuild ergänzen die automatisierten Codeprüfungen.

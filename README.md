@@ -30,6 +30,7 @@ Die ausgegebene lokale Adresse öffnen und **Spielen** klicken. Bei einem defekt
 - **Fünf freiwillige Nebenaufträge:** Flugtraining, Maras Medikamentenlieferung, Wetterdaten für die Fischer, Südexpress und die verschwundene Ernte. Die bisherigen sich wiederholenden Auftragsreihen entfallen. Die zehn Basen bleiben unabhängig von der Geschichte befrei- und verfolgbar.
 - **Zehn Basen, 90 Wachen und 29 Tanks.** Neu sind Festung Bastione, Depot Fonderia, Station Scogliera und Relais Meridiano. Schalte die Ziele einer Basis aus und halte ihre Flagge sechs Sekunden. Danach kehren Bewohner zurück, Nachschub wird verfügbar und die Flagge wechselt die Farbe.
 - **Bewohner und Verkehr:** Menschen mit sechs Berufen, unterschiedlicher Kleidung, Laufwegen, Arbeits- und Marktpausen, Gesprächen und örtlichen Dialogen. Bei Schüssen laufen sie zu sicheren Punkten und beruhigen sich allmählich. 26 Autos fahren auf getrennten Fahrspuren, bremsen und reagieren auf Fussgänger und andere Fahrzeuge. Entfernte Figuren werden deaktiviert.
+- **Dynamische Ereignisse:** Notrufe, verlorene Versorgung und gestörte Funksignale entstehen wechselnd an neun Orten der Insel. In der Nähe erscheinen ein türkisfarbener 3D-Leuchtmarker, ein HUD-Hinweis mit Entfernung und Restzeit sowie ein Blitzsymbol auf Minikarte und Atlas. Am Ereignisort wird E gehalten; der Abschluss vergibt Credits und Punkte. Zustand und Fortschritt werden automatisch gespeichert.
 - **Fahrbare SUVs:** Steige mit E in geparkte oder fahrende SUVs ein. W/S steuern Gas, Bremse und Rückwärtsgang, A/D lenken; E steigt wieder aus und U setzt ein festgefahrenes Fahrzeug auf die letzte sichere Position.
 - **Überarbeitete Atmosphäre:** eigene Wasseranimation, Himmelsverlauf, ziehende Wolken, Küstenvögel, wechselndes Tageslicht und nahe Schatten. Die Einstellung Performance deaktiviert Schatten.
 - **Inselatlas, Journal und Reisen:** Die Minikarte folgt dem Spieler. Entdeckte Siedlungen werden für Schnellreise freigeschaltet; Reisen funktioniert am Boden ohne Alarm und ohne laufenden Zeitauftrag.
@@ -62,7 +63,7 @@ Aufträge, besiegte Wachen, zerstörte Tanks und befreite Basen geben Credits zu
 | Linke / rechte Maustaste | Schiessen / Zielen |
 | J | Alternative Feuertaste |
 | 1 / 2 / R | Vorige / nächste gekaufte Waffe / Nachladen |
-| E | Markierte Auftragsaktion, Waffenhandel, Nachschub oder Gespräch |
+| E | Markierte Auftragsaktion, dynamisches Ereignis, Waffenhandel, Nachschub oder Gespräch |
 | SPACE / ENTER in Cutscenes | Nächste Einstellung / Szene überspringen |
 | ← → / E bei Storyentscheidung | Möglichkeit wählen / bestätigen |
 | Tab | Inselatlas öffnen / schliessen |
